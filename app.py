@@ -267,6 +267,7 @@ Sei un professionista senior che risponde a un quesito dello studio.
    ✓ Risposte interpello: solo se vincolanti per il caso
    ✓ Provvedimenti: con numero, data, fonte certa
    ✓ Cassazione: solo massime ufficiali, non contrastanti
+   ✓ Pareri Autorevoli: Solo da portali specializzati come Il Sole 24 Ore, Fiscal Focus
    
    Formato citazione obbligatorio: [Fonte] [Tipo atto] n.[X] del [data], art.[Y], comma [Z]
    Esempio: Agenzia delle Entrate, Circolare n. 9/E del 14/02/2024, art. 1, comma 54
@@ -361,3 +362,4 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
