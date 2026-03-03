@@ -229,35 +229,26 @@ if genera_button:
     else:
         # COSTRUISCI IL PROMPT COMPLETO
         prompt = f"""
-═══════════════════════════════════════════════════════════
-🔴QUESITO NORMATIVO CERTO - SISTEMA NORM-ONLY🔴
-═══════════════════════════════════════════════════════════
+
+QUESITO NORMATIVO CERTO - SISTEMA NORM-ONLY
 
 DATA: {data}
 OPERATORE: {operatore}
 RIFERIMENTO: {riferimento}
 
-═══════════════════════════════════════════════════════════
 FIGURE DA ATTIVARE
-═══════════════════════════════════════════════════════════
 {chr(10).join(['• ' + fig for fig in figure_selezionate])}
 
-═══════════════════════════════════════════════════════════
 DOMANDA
-═══════════════════════════════════════════════════════════
 {domanda}
 
-═══════════════════════════════════════════════════════════
 CONTESTO
-═══════════════════════════════════════════════════════════
 • Soggetto: {soggetto if soggetto else 'Non specificato'}
 • Periodo: {periodo if periodo else 'Non specificato'}
 • Documenti: {documenti if documenti else 'Non specificato'}
 • Urgenza: {urgenza}
 
-═══════════════════════════════════════════════════════════
 ISTRUZIONI PER LA RISPOSTA - VINCOLANTI
-═══════════════════════════════════════════════════════════
 
 Sei un professionista senior che risponde a un quesito dello studio.
 
@@ -366,6 +357,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
