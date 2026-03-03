@@ -240,7 +240,6 @@ FIGURE DA ATTIVARE
 
 DOMANDA
 {domanda}
-
 CONTESTO
 • Soggetto: {soggetto if soggetto else 'Non specificato'}
 • Periodo: {periodo if periodo else 'Non specificato'}
@@ -356,6 +355,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
