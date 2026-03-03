@@ -48,6 +48,7 @@ with st.expander("💼 FISCALITÀ E LAVORO", expanded=False):
         "Ragioniere Esperto Contabile": col1.checkbox("Ragioniere Esperto Contabile"),
         "Revisore Legale dei Conti": col2.checkbox("Revisore Legale dei Conti"),
         "Responsabile Antiriciclaggio": col3.checkbox("Responsabile Antiriciclaggio"),
+        "Esperto di Redazione Bilanci": col1.checkbox("Esperto di Redazione Bilanci"),
     }
 
 # CATEGORIA 3: TECNICA ED EDILIZIA
@@ -358,4 +359,5 @@ with st.sidebar:
 
 # FOOTER
 st.markdown("---")
+
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
