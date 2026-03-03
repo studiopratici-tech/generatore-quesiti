@@ -230,7 +230,7 @@ if genera_button:
         # COSTRUISCI IL PROMPT COMPLETO
         prompt = f"""
 ═══════════════════════════════════════════════════════════
-QUESITO NORMATIVO CERTO - SISTEMA NORM-ONLY
+**testo**QUESITO NORMATIVO CERTO - SISTEMA NORM-ONLY
 ═══════════════════════════════════════════════════════════
 
 DATA: {data}
@@ -363,5 +363,6 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
