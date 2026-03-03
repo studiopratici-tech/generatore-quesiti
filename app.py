@@ -203,7 +203,6 @@ with col2:
 st.markdown("---")
 st.subheader("❓ DOMANDA")
 domanda = st.text_area("Scrivi la tua domanda come se parlassi a un collega", height=150, placeholder="Esempio: Un medico in regime forfettario percepisce compensi da ASL come MMG. L'ASL deve emettere CU 2026? Con quale codice?")
-
 # CONTESTO
 st.markdown("---")
 st.subheader("📌 CONTESTO UTILE")
@@ -357,6 +356,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
