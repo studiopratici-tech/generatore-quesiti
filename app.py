@@ -228,74 +228,81 @@ if genera_button:
     else:
         # COSTRUISCI IL PROMPT COMPLETO
         prompt = f"""
+🔷 QUESITO NORMATIVO CERTO — SISTEMA NORM-ONLY
 
-QUESITO NORMATIVO CERTO - SISTEMA NORM-ONLY
+📋 DATI GENERALI
+Data: {data}
+Operatore: {operatore}
+Riferimento: {riferimento}
 
-DATA: {data}
-OPERATORE: {operatore}
-RIFERIMENTO: {riferimento}
+👥 FIGURE DA ATTIVARE
+{chr(10).join(['  ▸ ' + fig for fig in figure_selezionate])}
 
-FIGURE DA ATTIVARE
-{chr(10).join(['• ' + fig for fig in figure_selezionate])}
-
-DOMANDA
+❓ DOMANDA
 {domanda}
-CONTESTO
+
+📌 CONTESTO
 • Soggetto: {soggetto if soggetto else 'Non specificato'}
 • Periodo: {periodo if periodo else 'Non specificato'}
 • Documenti: {documenti if documenti else 'Non specificato'}
 • Urgenza: {urgenza}
 
-ISTRUZIONI PER LA RISPOSTA - VINCOLANTI
+
+🎯 ISTRUZIONI VINCOLANTI PER LA RISPOSTA
 
 Sei un professionista senior che risponde a un quesito dello studio.
 
-1. FONTI NORMATIVE (SOLO QUESTE):
+
+▌ 1. FONTI NORMATIVE (SOLO QUESTE)
    ✓ Leggi/decreti: Gazzetta Ufficiale, Normattiva
    ✓ Regolamenti UE: Gazzetta Ufficiale UE, EUR-Lex
    ✓ Circolari ufficiali: siti .gov.it, .agenziaentrate.gov.it, .inps.it
    ✓ Risposte interpello: solo se vincolanti per il caso
    ✓ Provvedimenti: con numero, data, fonte certa
    ✓ Cassazione: solo massime ufficiali, non contrastanti
-   ✓ Norme Regionali per eventuali quesiti di apertura attività
-   ✓ Pareri Autorevoli: Solo da portali specializzati come Il Sole 24 Ore, Fiscal Focus
+   ✓ Norme Regionali: per quesiti apertura attività
+   ✓ Pareri autorevoli: Il Sole 24 Ore, Fiscal Focus
    
-   Formato citazione obbligatorio: [Fonte] [Tipo atto] n.[X] del [data], art.[Y], comma [Z]
-   Esempio: Agenzia delle Entrate, Circolare n. 9/E del 14/02/2024, art. 1, comma 54
+   📐 Formato citazione: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]
+   💡 Esempio: AdE, Circolare n. 9/E del 14/02/2024, art. 1, c. 54
 
-2. STILE DI RISPOSTA:
-   - Italiano chiaro e discorsivo, come se spiegassi a un collega
-   - Evita elenchi puntati se non strettamente necessari
-   - Struttura: sintesi iniziale (2-3 righe) → ragionamento normativo passo-passo → riferimenti pratici finali
-   - Eventuali suggerimenti procedurali per l'elaborazione della pratica a mezzo portali, verificati, quale il portale dell'Agenzia delle Entrate, il portale dell'INPS o quello della Regione di appartenenza
 
-3. ONESTÀ INTELLETTUALE:
-   - Se la norma manca, è ambigua o ci sono orientamenti contrastanti, dichiaralo esplicitamente
-   - Non usare "si ritiene che", "prassi consolidata", "orientamento prevalente" senza fonte certa
-   - Per zone grigie: indica l'organo competente per interpello vincolante (AdE, INPS, Ministero, ecc.)
-   - Poni domande nel caso in cui il quesito non sia sufficientemente esaustivo o manchi di elemnti determinanti per l'analisi
+▌ 2. STILE DI RISPOSTA
+   • Italiano chiaro e discorsivo (come a un collega)
+   • Evita elenchi se non strettamente necessari
+   • Struttura ideale: sintesi → ragionamento → riferimenti pratici
+   • Suggerimenti procedurali: indica passaggi per portali ufficiali 
+     (Agenzia delle Entrate, INPS, Regioni) solo se verificati
 
-4. PROFONDITÀ:
-   - Meglio una spiegazione chiara e completa che una sintesi criptica
-   - Spiega il perché normativo, non solo il cosa
 
-5. STRUTTURA OBBLIGATORIA:
-   1. Riferimenti normativi puntuali (fonte + articolo + comma + data)
-   2. Applicazione al caso (SOLO se normativamente certa)
-   3. Eventuali lacune normative (esplicitamente dichiarate)
-   4. [Opzionale] Tabella sintesi solo se normata
+▌ 3. ONESTÀ INTELLETTUALE
+   • Norma ambigua o assente? → Dichiaralo esplicitamente
+   • NO "si ritiene che" senza fonte certa
+   • Zone grigie? → Indica organo per interpello vincolante
+   • Quesito incompleto? → Poni domande mirate prima di rispondere
 
-6. DIVIETO ASSOLUTO:
-   ✗ NO opinioni personali
-   ✗ NO "si ritiene che", "prassi comune", "orientamento prevalente"
-   ✗ NO "norme ibride" senza gerarchia certa
-   ✗ NO risposta se mancano i requisiti di certezza normativa
 
-═══════════════════════════════════════════════════════════
-RISPONDI ORA AL QUESITO
-═══════════════════════════════════════════════════════════
+▌ 4. PROFONDITÀ
+   • Spiega il PERCHÉ normativo, non solo il cosa
+   • Meglio 15 righe chiare che 3 criptiche
+
+
+▌ 5. STRUTTURA OBBLIGATORIA
+   ① Riferimenti normativi (fonte + articolo + comma + data)
+   ② Applicazione al caso (SOLO se normativamente certa)
+   ③ Lacune normative (esplicitamente dichiarate)
+   ④ [Opzionale] Tabella sintesi solo se normata
+
+
+▌ 6. DIVIETO ASSOLUTO
+   ✗ Opinioni personali
+   ✗ "Si ritiene che", "prassi comune", "orientamento prevalente"
+   ✗ Norme ibride senza gerarchia certa
+   ✗ Risposta senza certezza normativa
+
+
+✅ RISPONDI ORA AL QUESITO
 """
-
         # MOSTRA IL PROMPT GENERATO
         st.success("✅ Prompt generato con successo!")
         st.markdown("**Copia il prompt qui sotto e incollalo in ChatGPT:**")
@@ -355,6 +362,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
