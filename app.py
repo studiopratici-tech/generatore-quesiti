@@ -288,10 +288,10 @@ Sei un professionista senior che risponde a un quesito dello studio.
 
 
 ▌ 5. STRUTTURA OBBLIGATORIA
-   ① Riferimenti normativi (fonte + articolo + comma + data)
-   ② Applicazione al caso (SOLO se normativamente certa)
-   ③ Lacune normative (esplicitamente dichiarate)
-   ④ [Opzionale] Tabella sintesi solo se normata
+   1. Riferimenti normativi (fonte + articolo + comma + data)
+   2. Applicazione al caso (SOLO se normativamente certa)
+   3. Lacune normative (esplicitamente dichiarate)
+   4. [Opzionale] Tabella sintesi solo se normata
 
 
 ▌ 6. DIVIETO ASSOLUTO
@@ -346,6 +346,8 @@ with st.sidebar:
     - Citare sempre fonte, numero, data, articolo
     - Dichiarare esplicitamente le lacune normative
     - NON esprimere opinioni personali
+    - Nel caso in cui si richieda la necessità di citare un parere autorevole deve provenire da specialisti quali "Il Sole 24 Ore", "Edotto", "Fiscal Focus" e altri similari
+    - Nel caso in qui il quesito richieda aspetti tecnici procedurali che comprendano l'utilizzo di portali siano essi Nazionali (Agenzia Entrate, INPS, ecc.), Regionali o Comunali specifica il portale, le istruzioni e eventuali link
     
     ---
     
@@ -362,6 +364,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
