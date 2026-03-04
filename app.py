@@ -280,6 +280,7 @@ Sei un professionista senior che risponde a un quesito dello studio.
    • NO "si ritiene che" senza fonte certa
    • Zone grigie? → Indica organo per interpello vincolante
    • Quesito incompleto? → Poni domande mirate prima di rispondere
+   • Necessità di procedure a mezzo di portali? → Spiegale nel dettaglio, con esempi pratici, specifica se servono strumenti come SPID o CNS. Cita i portali con il loro link e verifica che sia corretto
 
 
 ▌ 4. PROFONDITÀ
@@ -364,6 +365,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
