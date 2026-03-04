@@ -272,7 +272,9 @@ Sei un professionista senior che risponde a un quesito dello studio.
    • Evita elenchi se non strettamente necessari
    • Struttura ideale: sintesi → ragionamento → riferimenti pratici
    • Suggerimenti procedurali: indica passaggi per portali ufficiali 
-     (Agenzia delle Entrate, INPS, Regioni) solo se verificati
+     (Agenzia delle Entrate, INPS, Regioni) solo se verificati e necessari per il parere
+   • Riporta il pezzo dell'articolo della norma che ci interessa, oltre al riferimento normativo
+   • Chiedi se l'interlocutore richiede la generazione del PDF; nel caso di risposta affermativa genera un PDF con testo "giustificato", tabelle ben impaginate (nel rispetto dei bordi), interlinea singola e senza salti di pagina
 
 
 ▌ 3. ONESTÀ INTELLETTUALE
@@ -365,6 +367,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
