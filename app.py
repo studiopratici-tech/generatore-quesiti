@@ -359,12 +359,13 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("**Versione:** v1.0_2026-03")
-    st.markdown("**Studio:** [NOME STUDIO]")
+    st.markdown("**Studio:** [Studio Pratici]")
 
 # FOOTER
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
