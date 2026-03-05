@@ -466,35 +466,36 @@ with st.sidebar:
     
     4. **Compila il contesto** (opzionale ma consigliato)
     
-    5. **Clicca "Genera Prompt"** e copia il risultato in ChatGPT
+    5. **Clicca Genera Prompt** e copia il risultato in ChatGPT
     
     ---
     
-    ### PROTOCOLLO NORM-ONLY
+    ### 📋 PROTOCOLLO NORM-ONLY
     
-    Questa app genera prompt che vincolano l'AI a:
+    Questa app genera prompt che vincolano lAI a:
     - Usare SOLO fonti normative certe
     - Citare sempre fonte, numero, data, articolo
     - Dichiarare esplicitamente le lacune normative
     - NON esprimere opinioni personali
-    - Nel caso in cui si richieda la necessità di citare un parere autorevole deve provenire da specialisti quali "Il Sole 24 Ore", "Edotto", "Fiscal Focus" e altri similari
-    - Nel caso in qui il quesito richieda aspetti tecnici procedurali che comprendano l'utilizzo di portali siano essi Nazionali (Agenzia Entrate, INPS, ecc.), Regionali o Comunali specifica il portale, le istruzioni e eventuali link
+    - Nel caso in cui si richieda la necessità di citare un parere autorevole deve provenire da specialisti quali Il Sole 24 Ore, Edotto, Fiscal Focus e altri similari
+    - Nel caso in cui il quesito richieda aspetti tecnici procedurali che comprendano lutilizzo di portali siano essi Nazionali (Agenzia Entrate, INPS, ecc.), Regionali o Comunali specifica il portale, le istruzioni e eventuali link
     
     ---
     
     ### 🔧 SUPPORTO
     
-    Se hai problemi o servono modifiche, contatta l'amministratore.
+    Se hai problemi o servono modifiche, contatta lamministratore.
     """)
     
     st.markdown("---")
     st.markdown("**Versione:** v1.0_2026-03")
-    st.markdown("**Studio:** [Studio Pratici]")
+    st.markdown("**Studio:** Studio Pratici")
 
 # FOOTER
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
