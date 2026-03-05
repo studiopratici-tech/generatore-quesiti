@@ -326,6 +326,9 @@ Se la risposta appare troppo sintetica o schematica, è da considerarsi errata e
 ▌ OUTPUT PDF (se richiesto)
 
 Se l’interlocutore richiede un PDF, generarlo con queste caratteristiche:
+Il PDF deve essere una impaginazione della risposta già generata.
+È vietato sintetizzare, accorciare o riscrivere il contenuto del parere.
+Se nella richiesta è presente un logo allegato, utilizzarlo come carta intestata del documento.
 
 • formato A4  
 • margini 2 cm  
@@ -455,6 +458,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
