@@ -315,7 +315,18 @@ Oggetto
 [Testo discorsivo che descrive l'oggetto del parere]
 
 Riferimenti normativi
-[Testo discorsivo con citazioni nel formato: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]]
+
+[Normattiva] Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 536, che dispone:
+"Le persone a favore delle quali la legge riserva una quota di eredità sono il coniuge, i figli e, in mancanza di figli, gli ascendenti."
+Questa norma individua in modo tassativo i legittimari...
+
+[Normattiva] Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 553, che dispone:
+"Le disposizioni testamentarie e le donazioni che eccedono la quota di cui il testatore poteva disporre sono soggette a riduzione."
+L'azione di riduzione può essere esercitata esclusivamente dai legittimari...
+
+[Normattiva] D.Lgs. n. 346 del 31/10/1990, art. 2 e art. 7, che dispone:
+"Per i beneficiari non parenti l'aliquota dell'imposta di successione è dell'8% senza franchigia."
+Questo significa che i vicini, come soggetti estranei alla famiglia...
 
 Regola generale
 [Inquadramento normativo generale, testo discorsivo]
@@ -485,3 +496,4 @@ with st.sidebar:
 # FOOTER
 st.markdown("---")
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
