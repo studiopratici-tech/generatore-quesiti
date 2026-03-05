@@ -334,30 +334,94 @@ Il livello di spiegazione deve rimanere uniforme per tutto il documento.
 • Fai sempre esempi esplicativi quando la norma lo richiede (es. locazioni, requisiti soggettivi, soglie fiscali).
 • Esprimi pareri articolati basandoti sui professionisti chiamati in causa.
 
-▌ OUTPUT PDF (se richiesto)
+▌ OUTPUT TESTO - PRONTO PER WORD/PDF
 
-Se l’interlocutore richiede un PDF, generarlo con queste caratteristiche:
-Il PDF deve essere una impaginazione della risposta già generata.
-È vietato sintetizzare, accorciare o riscrivere il contenuto del parere.
-Se nella richiesta è presente un logo allegato, utilizzarlo come carta intestata del documento.
+ChatGPT non può generare PDF reali. Devi outputtare testo strutturato con markdown, pronto per essere copiato in Word/LibreOffice e poi esportato come PDF.
 
-• formato A4  
-• margini 2 cm  
-• testo giustificato  
-• interlinea singola (leading 13–14)  
-• font professionale (Times o Helvetica)  
+FORMATTAZIONE RICHIESTA
+Usa # per il titolo principale (H1), ## per le sezioni principali (H2), ### per i sottotitoli e i pareri esperti (H3). Lascia una riga vuota tra i paragrafi. Non usare righe orizzontali, non usare tabelle markdown, non usare codice in blocchi. Usa grassetto solo per concetti chiave normativi e corsivo solo per termini tecnici.
 
-Struttura del documento:
+STRUTTURA OBBLIGATORIA DEL DOCUMENTO
 
-Titolo → Oggetto → Riferimenti normativi → Regola generale → Applicazione al caso → Parere degli Esperti Chiamati in Causa → Esempi → Conseguenze giuridiche → Conclusione → Villafranca in Lunigiana e Firma.
+# PARERE PROFESSIONALE – [TITOLO DEL QUESITO]
 
-Le citazioni normative devono apparire nel formato:
+## Oggetto
+[Testo discorsivo che descrive l'oggetto del parere]
 
-**[GU] Legge n.X del XX/XX/XXXX, art.X, c.X**
+## Riferimenti normativi
+[Testo discorsivo con citazioni nel formato: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]]
 
-L’impaginazione deve essere pulita, professionale e senza testo fuori margine.
+## Regola generale
+[Inquadramento normativo generale, testo discorsivo]
 
-Il PDF deve includere TUTTE le sotto-sezioni dell’analisi svolta nella risposta, senza omettere passaggi logici o parti dell’argomentazione normativa.
+## Applicazione al caso
+[Applicazione della norma al caso concreto, testo discorsivo]
+
+## Parere degli Esperti Chiamati in Causa
+
+Per OGNI figura professionale selezionata nel quesito, devi creare un paragrafo che INIZIA ESATTAMENTE con:
+
+### Parere di [NOME ESATTO DELLA FIGURA]
+[Testo discorsivo, almeno 4-5 righe, nel proprio ambito di competenza]
+
+Esempio con le figure del quesito:
+
+### Parere di Avvocato Civilista
+[Testo discorsivo...]
+
+### Parere di Avvocato Tributarista
+[Testo discorsivo...]
+
+### Parere di Avvocato Familiare
+[Testo discorsivo...]
+
+### Parere di Commercialista Tributarista
+[Testo discorsivo...]
+
+### Parere di Notaio
+[Testo discorsivo...]
+
+Regole vincolanti per i pareri:
+- Ogni paragrafo DEVE iniziare con "### Parere di [NOME FIGURA]" esattamente così
+- Ogni esperto parla SOLO nel proprio ambito di competenza
+- NON ripetere concetti già espressi da altri esperti
+- Se un esperto non ha rilievi specifici, scrivere: "Nessun rilievo specifico nell'ambito di competenza"
+- Stile discorsivo: NO elenchi puntati come struttura principale del parere
+- Lunghezza: almeno 4-5 righe discorsive per ogni parere
+
+## Esempi
+[Se rilevante, esempi pratici discorsivi]
+
+## Conseguenze giuridiche
+[Conseguenze della soluzione adottata, testo discorsivo]
+
+## Conclusione
+[Sintesi finale del parere, testo discorsivo]
+
+FIRMA FINALE (OBBLIGATORIA - NON OMETTERE MAI)
+
+Queste due righe devono essere le ultime del testo, senza eccezioni. Non modificare il testo di queste righe.
+
+Villafranca in Lunigiana, [data odierna nel formato GG/MM/AAAA]
+Firma: Studio Pratici
+
+Esempio corretto:
+Villafranca in Lunigiana, 05/03/2026
+Firma: Studio Pratici
+
+Non aggiungere altro dopo queste righe. Non modificare il testo di queste righe. Non omettere queste righe.
+
+CHECKLIST FINALE PRIMA DI INVIARE LA RISPOSTA
+
+Prima di concludere, verifica che la tua risposta contenga:
+- Titolo con # (H1)
+- Sezioni con ## (H2)
+- Pareri esperti con ### Parere di [FIGURA] (H3)
+- Testo discorsivo (NO elenchi come struttura principale)
+- Citazioni normative nel formato: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]
+- Le due righe finali esatte: "Villafranca in Lunigiana, GG/MM/AAAA" + "Firma: Studio Pratici"
+
+Se manca anche solo uno di questi elementi, la risposta è errata. Riscrivila finché non rispetta tutti i punti.
 
 ▌ 3. ONESTÀ INTELLETTUALE
    • Norma ambigua o assente? → Dichiaralo esplicitamente
@@ -469,35 +533,6 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
