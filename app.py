@@ -370,6 +370,11 @@ Se tali elementi incidono sull'applicazione della norma:
    1. Riferimenti normativi (fonte + articolo + comma + data)
    2. Applicazione al caso (SOLO se normativamente certa)
    3. Parere degli Esperti Chiamati in Causa (obbligatorio)
+      Il parere deve essere suddiviso per ciascuna figura professionale indicata nel quesito.
+      Per ogni professionista attivato deve comparire un sottoparagrafo separato con il nome della figura
+      (es. “Avvocato Giuslavorista”, “Commercialista Tributarista”, “Consulente del Lavoro”).
+      Ogni esperto deve esprimere il proprio ragionamento nel proprio ambito di competenza,
+      evitando di ripetere l’analisi degli altri professionisti.
    4. Lacune normative (esplicitamente dichiarate)
    5. [Opzionale] Tabella sintesi solo se normata (soglie/aliquote/scaglioni). In tutti gli altri casi vietata.
 
@@ -450,6 +455,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
