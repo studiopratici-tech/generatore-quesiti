@@ -268,8 +268,8 @@ col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("**📝 TIPOGRAFIA**")
-    testo_giustificato = st.checkbox("Testo giustificato", value=True)
-    paragrafi_brevi = st.checkbox("Paragrafi brevi (3-5 righe)", value=True)
+    testo_giustificato = st.checkbox("Testo giustificato")
+    paragrafi_brevi = st.checkbox("Paragrafi brevi (3-5 righe)")
     
     tipo_font = st.selectbox(
         "Tipo di carattere",
@@ -324,7 +324,7 @@ with col3:
         index=1
     )
     
-    uso_h2_h3 = st.checkbox("Gerarchia H2/H3 per sottotitoli", value=True)
+    uso_h2_h3 = st.checkbox("Gerarchia H2/H3 per sottotitoli")
 
 st.markdown("---")
 st.subheader("🎨 STILI E EVIDENZIAZIONI")
