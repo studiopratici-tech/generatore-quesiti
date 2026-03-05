@@ -428,8 +428,12 @@ Se manca anche solo uno di questi elementi, la risposta è errata. Riscrivila fi
     ✗ Norme ibride senza gerarchia certa
     ✗ Risposta senza certezza normativa
 
+        # COSTRUISCI IL PROMPT COMPLETO
+        prompt = f"""
+
 ✅ RISPONDI ORA AL QUESITO
 """
+        
         # MOSTRA IL PROMPT GENERATO
         st.success("✅ Prompt generato con successo!")
         st.markdown("**Copia il prompt qui sotto e incollalo in ChatGPT:**")
@@ -491,6 +495,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
