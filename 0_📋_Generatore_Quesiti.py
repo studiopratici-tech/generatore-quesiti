@@ -470,7 +470,7 @@ with st.sidebar:
     
     ---
     
-    ### 📋 PROTOCOLLO NORM-ONLY
+    ### PROTOCOLLO NORM-ONLY
     
     Questa app genera prompt che vincolano l'AI a:
     - Usare SOLO fonti normative certe
@@ -495,6 +495,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
