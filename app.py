@@ -2,7 +2,7 @@ import streamlit as st
 
 # AGGIUNGI QUESTO BLOCCO SUBITO DOPO IMPORT
 st.set_page_config(
-    page_title="📋 Generatore Quesiti",
+    page_title="Generatore Quesiti",
     page_icon="📋",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -469,6 +469,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
