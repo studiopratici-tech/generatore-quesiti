@@ -485,7 +485,7 @@ with st.sidebar:
     ### 🔧 SUPPORTO
     
     Se hai problemi o servono modifiche, contatta lamministratore.
-    """)
+
     
     st.markdown("---")
     st.markdown("**Versione:** v1.0_2026-03")
@@ -495,3 +495,4 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
