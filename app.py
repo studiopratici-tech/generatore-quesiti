@@ -316,6 +316,10 @@ Il testo deve sembrare un parere scritto da un professionista senior dello studi
 
 Se la risposta appare troppo sintetica o schematica, è da considerarsi errata e deve essere riscritta in forma discorsiva.
 
+Lo stile discorsivo e argomentativo deve essere mantenuto per tutta la risposta, dall’inizio alla conclusione.
+Anche nelle ultime sezioni del parere (es. applicazione al caso, conseguenze giuridiche, conclusione) è vietato passare a forme sintetiche o riassuntive.
+Il livello di spiegazione deve rimanere uniforme per tutto il documento.
+
 ▌ ULTERIORI INDICAZIONI
 
 • Suggerimenti procedurali: indica passaggi per portali ufficiali (Agenzia delle Entrate, INPS, Regioni) solo se verificati e necessari per il parere.
@@ -458,6 +462,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
