@@ -495,12 +495,3 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
-
-
-
-
-
-
-
-
-
