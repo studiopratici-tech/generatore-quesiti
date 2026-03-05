@@ -10,9 +10,6 @@ st.set_page_config(
 
 # ... poi tutto il resto del tuo codice rimane uguale ...
 
-# CONFIGURAZIONE PAGINA
-st.set_page_config(page_title="Generatore Quesiti Norm-Only", layout="wide", page_icon="📋")
-
 # TITOLO
 st.title("📋 GENERATORE QUESITI NORMATIVI CERTI")
 st.markdown("**Sistema NORM-ONLY** - Solo fonti certe, zero interpretazioni")
@@ -472,6 +469,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
