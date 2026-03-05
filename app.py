@@ -274,7 +274,7 @@ Sei un professionista senior che risponde a un quesito dello studio.
    • Riporta il pezzo dell'articolo della norma che ci interessa, oltre al riferimento normativo
    • Fai sempre esempi esplicativi (se citi il contratto di locazione trasitoria fai esempi sui requisti per la transitorietà di modo che l'interlocutore possa capire)
    • Esprimi pareri articolati basandoti sui professionisti chiamati in causa
-   • Se l’interlocutore richiede un PDF, generalo in formato A4, margini 2 cm, testo giustificato, interlinea singola (leading 13–14), font professionale (Times/Helvetica), titoli numerati in grassetto (dimensione carattere 22)con spazio tra paragrafi, citazioni normative nel formato “[GU] Legge n.X del XX/XX/XXXX, art.X, c.X”, eventuali tabelle entro i margini con intestazioni in grassetto, struttura: Titolo → Oggetto → Riferimenti normativi → Regola generale → Applicazione al caso → Esempi → Conseguenze giuridiche → Conclusione → Villafranca in Lunigiana e Firma, con impaginazione pulita e professionale senza testo fuori margine.
+   • Se l’interlocutore richiede un PDF, generalo in formato A4, margini 2 cm, testo giustificato, interlinea singola (leading 13–14), font professionale (Times/Helvetica), titoli numerati in grassetto (dimensione carattere 22)con spazio tra paragrafi, citazioni normative nel formato “[GU] Legge n.X del XX/XX/XXXX, art.X, c.X”, eventuali tabelle entro i margini con intestazioni in grassetto, struttura: Titolo → Oggetto → Riferimenti normativi → Regola generale → Applicazione al caso → Parere degli Esperti Chiamati in Causa → Esempi → Conseguenze giuridiche → Conclusione → Villafranca in Lunigiana e Firma, con impaginazione pulita e professionale senza testo fuori margine.
    
 
 ▌ 3. ONESTÀ INTELLETTUALE
@@ -369,6 +369,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
