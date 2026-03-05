@@ -1,14 +1,11 @@
 import streamlit as st
 
-# AGGIUNGI QUESTO BLOCCO SUBITO DOPO IMPORT
 st.set_page_config(
     page_title="Generatore Quesiti",
     page_icon="📋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# ... poi tutto il resto del tuo codice rimane uguale ...
 
 # TITOLO
 st.title("📋 GENERATORE QUESITI NORMATIVI CERTI")
@@ -209,7 +206,8 @@ with col2:
 # DOMANDA
 st.markdown("---")
 st.subheader("❓ DOMANDA")
-domanda = st.text_area("Scrivi la tua domanda come se parlassi a un collega", height=150, placeholder="Esempio: Un medico in regime forfettario percepisce compensi da ASL come MMG. L'ASL deve emettere CU 2026? Con quale codice?")
+domanda = st.text_area("Scrivi la tua domanda come se parlassi a un collega", height=150, placeholder="Esempio: Un medico in regime forfettario percepisce compensi da ASL come MMG. LASL deve emettere CU 2026? Con quale codice?")
+
 # CONTESTO
 st.markdown("---")
 st.subheader("📌 CONTESTO UTILE")
@@ -217,16 +215,13 @@ col1, col2 = st.columns(2)
 with col1:
     soggetto = st.text_input("Soggetto interessato", placeholder="es. medico forfettario, SRL, dipendente...")
     periodo = st.text_input("Periodo di riferimento", placeholder="es. redditi 2025, CU 2026...")
-    
-    importo = st.number_input("💰 Importo coinvolto (€)", min_value=0.0, step=100.0)
+    importo = st.number_input("💰 Importo coinvolto (EUR)", min_value=0.0, step=100.0)
 with col2:
     documenti = st.text_input("Documenti disponibili", placeholder="es. circolare AdE, interpello, contratto...")
-    
     modalita_pagamento = st.selectbox(
         "💳 Modalità di pagamento",
         ["Non specificata", "Contanti diretti", "Contanti tramite banca/poste", "Bonifico", "Assegno"]
     )
-    
     urgenza = st.selectbox("Urgenza", ["Normale", "Entro 48h", "Oggi"])
 
 # GENERA PROMPT
@@ -241,8 +236,7 @@ if genera_button:
     elif not domanda:
         st.error("⚠️ Scrivi almeno la domanda!")
     else:
-        # COSTRUISCI IL PROMPT COMPLETO
-                prompt = f"""
+        prompt = f"""
 🔷 QUESITO NORMATIVO CERTO — SISTEMA NORM-ONLY
 
 📋 DATI GENERALI
@@ -276,7 +270,6 @@ Sei un professionista senior che risponde a un quesito dello studio.
    ✓ Cassazione: solo massime ufficiali, non contrastanti
    ✓ Norme Regionali: per quesiti apertura attività
    ✓ Pareri autorevoli: Il Sole 24 Ore, Fiscal Focus
-   
    Formato citazione: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]
    Esempio: AdE, Circolare n. 9/E del 14/02/2024, art. 1, c. 54
 
@@ -371,6 +364,9 @@ Conseguenze giuridiche
 Conclusione
 [Sintesi finale del parere, testo discorsivo]
 
+Lacune normative
+[Dichiara esplicitamente eventuali ambiguità o informazioni mancanti]
+
 FIRMA FINALE (OBBLIGATORIA - NON OMETTERE MAI)
 
 Queste due righe devono essere le ultime del testo, senza eccezioni. Non modificare il testo di queste righe.
@@ -428,18 +424,13 @@ Se manca anche solo uno di questi elementi, la risposta è errata. Riscrivila fi
     ✗ Norme ibride senza gerarchia certa
     ✗ Risposta senza certezza normativa
 
-        # COSTRUISCI IL PROMPT COMPLETO
-        prompt = f"""
-
-RISPONDI ORA AL QUESITO
+✅ RISPONDI ORA AL QUESITO
 """
         
-        # MOSTRA IL PROMPT GENERATO
         st.success("✅ Prompt generato con successo!")
         st.markdown("**Copia il prompt qui sotto e incollalo in ChatGPT:**")
         st.code(prompt, language="markdown")
         
-        # PULSANTI DOWNLOAD E COPIA
         col1, col2 = st.columns(2)
         with col1:
             st.download_button(
@@ -485,7 +476,7 @@ with st.sidebar:
     ### 🔧 SUPPORTO
     
     Se hai problemi o servono modifiche, contatta lamministratore.
-
+    """)
     
     st.markdown("---")
     st.markdown("**Versione:** v1.0_2026-03")
@@ -493,6 +484,4 @@ with st.sidebar:
 
 # FOOTER
 st.markdown("---")
-
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
-
