@@ -310,8 +310,9 @@ Se tali elementi incidono sull'applicazione della norma:
 ▌ 5. STRUTTURA OBBLIGATORIA
    1. Riferimenti normativi (fonte + articolo + comma + data)
    2. Applicazione al caso (SOLO se normativamente certa)
-   3. Lacune normative (esplicitamente dichiarate)
-   4. [Opzionale] Tabella sintesi solo se normata
+   3. Parere degli Esperti Chiamati in Causa (obbligatorio)
+   4. Lacune normative (esplicitamente dichiarate)
+   5. [Opzionale] Tabella sintesi solo se normata
 
 ▌ 5-bis. OBBLIGO DI TRATTARE NORME CONCORRENTI
 Se esistono due o più norme applicabili allo stesso fatto (es. limite contante vs obbligo tracciabilità), devi:
@@ -390,6 +391,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
