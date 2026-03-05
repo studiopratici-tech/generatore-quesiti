@@ -330,15 +330,15 @@ st.markdown("---")
 st.subheader("🎨 STILI E EVIDENZIAZIONI")
 col1, col2 = st.columns(2)
 with col1:
-    grassetto_chiave = st.checkbox("Grassetto per concetti chiave", value=True)
-    corsivo_tecnico = st.checkbox("Corsivo per termini tecnici", value=True)
-    elenchi_minimali = st.checkbox("Elenchi solo se necessari", value=True)
-    box_evidenziazione = st.checkbox("Box colorati per avvisi/novità", value=True)
+    grassetto_chiave = st.checkbox("Grassetto per concetti chiave")
+    corsivo_tecnico = st.checkbox("Corsivo per termini tecnici")
+    elenchi_minimali = st.checkbox("Elenchi solo se necessari")
+    box_evidenziazione = st.checkbox("Box colorati per avvisi/novità")
 with col2:
-    numerazione_sezioni = st.checkbox("Numerazione sezioni (1., 1.1, 1.1.1)", value=True)
-    citazioni_evidenziate = st.checkbox("Citazioni normative in box separati", value=True)
-    link_ipertestuali = st.checkbox("Link attivi nel testo", value=True)
-    note_piè_pagina = st.checkbox("Note a piè di pagina", value=False)
+    numerazione_sezioni = st.checkbox("Numerazione sezioni (1., 1.1, 1.1.1)")
+    citazioni_evidenziate = st.checkbox("Citazioni normative in box separati")
+    link_ipertestuali = st.checkbox("Link attivi nel testo")
+    note_piè_pagina = st.checkbox("Note a piè di pagina")
 
 # GENERA ARTICOLO
 st.markdown("---")
