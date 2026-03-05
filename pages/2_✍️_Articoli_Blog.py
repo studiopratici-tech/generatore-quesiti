@@ -20,7 +20,8 @@ with col3:
         "Assicurazioni e RCA",
         "Normativa Regionale/Comunale",
         "Approfondimenti Tecnici",
-        "News Normative"
+        "News Normative",
+        "Guide Pratiche Operative"
     ])
 
 st.markdown("---")
@@ -29,14 +30,14 @@ st.markdown("---")
 st.subheader("🎯 TITOLO E SEO")
 col1, col2 = st.columns(2)
 with col1:
-    titolo_articolo = st.text_input("Titolo dell'articolo", placeholder="Es: Nuove scadenze fiscali 2026: cosa cambia per i professionisti")
+    titolo_articolo = st.text_input("Titolo dell'articolo", placeholder="Es: Guida pratica al collegamento POS e registratore di cassa 2026")
     meta_descrizione = st.text_area("Meta descrizione (max 160 caratteri)", 
-        placeholder="Breve sintesi per Google. Es: Guida alle nuove scadenze fiscali 2026 per professionisti: adempimenti, termini, sanzioni.",
+        placeholder="Breve sintesi per Google. Es: Guida completa al collegamento POS e registratore di cassa: procedura passo-passo, adempimenti, sanzioni.",
         height=70)
 with col2:
     parole_chiave = st.text_area("Parole chiave SEO (separate da virgola)", 
-        placeholder="scadenze fiscali 2026, professionisti, adempimenti, Agenzia delle Entrate")
-    lunghezza_articolo = st.selectbox("Lunghezza stimata", ["Breve (500-800 parole)", "Medio (800-1500 parole)", "Lungo (1500-2500 parole)"])
+        placeholder="collegamento POS registratore di cassa, adempimenti 2026, guida pratica")
+    lunghezza_articolo = st.selectbox("Lunghezza stimata", ["Breve (600-1000 parole)", "Medio (1000-1800 parole)", "Lungo (1800-3000 parole)", "Guida completa (3000+ parole)"])
 
 # TARGET E TONO
 st.markdown("---")
@@ -44,8 +45,8 @@ st.subheader("👥 TARGET E STILE")
 col1, col2 = st.columns(2)
 with col1:
     target = st.selectbox("Destinatari", [
-        "Professionisti dello studio (tecnico)",
-        "Clienti dello studio (chiaro ma professionale)",
+        "Professionisti dello studio (tecnico-specialistico)",
+        "Clienti dello studio (professionale ma accessibile)",
         "Pubblico generale (divulgativo)",
         "Misto (professionisti + clienti)"
     ])
@@ -53,92 +54,167 @@ with col2:
     tono = st.selectbox("Tono di voce", [
         "Tecnico-normativo (preciso, citazioni puntuali)",
         "Professionale-discorsivo (chiaro ma autorevole)",
-        "Divulgativo (semplice, esempi pratici)",
+        "Pratico-operativo (guide passo-passo, esempi)",
         "Ibrido (tecnico + spiegazioni accessibili)"
     ])
 
 # FONTI DA CITARE
 st.markdown("---")
-st.subheader("📚 FONTI NORMATIVE DA UTILIZZARE")
+st.subheader("📚 FONTI NORMATIVE E DOTTRINALI")
+st.markdown("*Seleziona le fonti da utilizzare e citare*")
+
 col1, col2, col3 = st.columns(3)
 with col1:
-    fonte_gazzetta = st.checkbox("Gazzetta Ufficiale / Normattiva")
+    fonte_gazzetta = st.checkbox("Gazzetta Ufficiale / Normattiva", value=True)
     fonte_eurlex = st.checkbox("Regolamenti UE / EUR-Lex")
-    fonte_agenzia_entrate = st.checkbox("Circolari Agenzia delle Entrate")
+    fonte_agenzia_entrate = st.checkbox("Circolari Agenzia delle Entrate", value=True)
+    fonte_interpelli_ade = st.checkbox("Risposte Interpello AdE", value=True)
 with col2:
-    fonte_inps = st.checkbox("Circolari INPS")
+    fonte_inps = st.checkbox("Circolari/Messaggi INPS")
     fonte_cassazione = st.checkbox("Massime Cassazione (ufficiali)")
     fonte_regionale = st.checkbox("Normativa Regionale")
-with col3:
     fonte_comunale = st.checkbox("Regolamenti Comunali")
+with col3:
     fonte_ivass = st.checkbox("Regolamenti IVASS")
-    fonte_altro = st.text_input("Altra fonte specifica", placeholder="Es: Il Sole 24 Ore, Fiscal Focus")
+    fonte_consap = st.checkbox("Norme CONSAP")
+    fonte_altro = st.text_input("Altra fonte specifica", placeholder="Es: Ministero Sviluppo Economico")
 
-# IMMAGINI ROYALTY-FREE
 st.markdown("---")
-st.subheader("🖼️ IMMAGINI (ROYALTY-FREE)")
+st.subheader("📰 BANCHE DATI E PORTALI SPECIALIZZATI")
+col1, col2, col3 = st.columns(3)
+with col1:
+    banco_sole24ore = st.checkbox("Il Sole 24 Ore (dottrina/prassi)", value=True)
+    banco_edotto = st.checkbox("Edotto (guide/approfondimenti)")
+    banco_fiscalfocus = st.checkbox("Fiscal Focus (analisi tecniche)")
+with col2:
+    banco_italiaoggi = st.checkbox("Italia Oggi (news/normativa)")
+    banco_quattroruote = st.checkbox("Quattroruote/Eurotax (settore auto)")
+    banco_aci = st.checkbox("ACI (dati tecnici/tariffe)")
+with col3:
+    banco_portale_ade = st.checkbox("Portale Agenzia delle Entrate (guide operative)")
+    banco_portale_inps = st.checkbox("Portale INPS (procedure)")
+    banco_altri = st.text_area("Altri portali/banche dati", placeholder="Es: ENEA, INAIL, Camere di Commercio...")
+
+# IMMAGINI E CONTENUTI VISIVI
+st.markdown("---")
+st.subheader("🖼️ IMMAGINI E CONTENUTI VISIVI")
 col1, col2 = st.columns(2)
 with col1:
-    suggerisci_immagini = st.checkbox("Suggerisci immagini royalty-free")
-    tipo_immagine = st.selectbox("Tipo immagine", [
-        "Concettuale (es: bilancia, documenti, calendario)",
-        "Professionale (es: ufficio, professionista al lavoro)",
-        "Tecnica (es: grafici, tabelle, flowchart)",
-        "Nessuna immagine"
+    tipo_contenuto = st.radio("Tipo di articolo", [
+        "Articolo normativo/dottrinale (poche immagini)",
+        "Guida pratica/procedurale (immagini esplicative)",
+        "Approfondimento tecnico (grafici/tabelle)",
+        "News breve (1 immagine di contesto)"
     ])
 with col2:
-    if suggerisci_immagini:
-        piattaforme = st.multiselect("Piattaforme preferite", [
-            "Unsplash", "Pexels", "Pixabay", "Freepik (con attribuzione)"
-        ], default=["Unsplash", "Pexels"])
-        termini_ricerca = st.text_input("Termini di ricerca immagine", 
-            placeholder="Es: tax calendar, professional office, legal documents")
+    if "procedurale" in tipo_contenuto or "tecnica" in tipo_contenuto:
+        immagini_procedurali = st.checkbox("Richiedi immagini procedurali passo-passo", value=True)
+        termini_ricerca_custom = st.text_input("Termini specifici per ricerca immagini", 
+            placeholder="Es: 'POS collegato registratore di cassa', 'schermata portale AdE'")
 
-# STRUTTURA ARTICOLI
+# PIATTAFORME IMMAGINI
+if tipo_contenuto != "Articolo normativo/dottrinale (poche immagini)":
+    st.markdown("---")
+    st.subheader("📸 FONTI IMMAGINI ROYALTY-FREE")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        unsplash = st.checkbox("Unsplash", value=True)
+        pexels = st.checkbox("Pexels", value=True)
+    with col2:
+        pixabay = st.checkbox("Pixabay")
+        freepik = st.checkbox("Freepik (con attribuzione)")
+    with col3:
+        screenshot_proprio = st.checkbox("Screenshot da portali ufficiali (fair use)")
+        nessuna_immagine = st.checkbox("Nessuna immagine")
+
+# STRUTTURA E IMPAGINAZIONE
 st.markdown("---")
-st.subheader("📐 STRUTTURA RICHIESTA")
-struttura = st.multiselect("Seleziona le sezioni da includere", [
-    "Titolo accattivante + sottotitolo",
-    "Sommario/esecutivo iniziale (3-4 righe)",
+st.subheader("📐 STRUTTURA E IMPAGINAZIONE")
+st.markdown("*Seleziona gli elementi da includere nell'articolo*")
+
+elementi_struttura = st.multiselect("Sezioni dell'articolo", [
+    "Titolo H1 accattivante + sottotitolo esplicativo",
+    "Sommario/esecutivo iniziale (3-5 righe)",
+    "Indice/indice dei contenuti (per articoli lunghi)",
     "Inquadramento normativo di riferimento",
     "Analisi puntuale con citazioni (fonte + articolo + comma + data)",
-    "Applicazione pratica al caso tipo",
+    "Applicazione pratica con esempi concreti",
+    "Procedura operativa passo-passo (se guida)",
+    "Immagini esplicative con didascalie (se pertinenti)",
+    "Box 'Cosa cambia' o 'Novità'",
+    "Box 'Da ricordare' con punti chiave",
     "Prassi operative e suggerimenti procedurali",
     "Eventuali lacune o zone grigie (dichiarate esplicitamente)",
+    "FAQ (domande frequenti)",
     "Conclusioni operative per il lettore",
-    "Box 'Da ricordare' con punti chiave",
-    "Riferimenti normativi completi in fondo"
+    "Riferimenti normativi completi in fondo",
+    "Link utili e approfondimenti"
 ], default=[
-    "Titolo accattivante + sottotitolo",
-    "Sommario/esecutivo iniziale (3-4 righe)",
+    "Titolo H1 accattivante + sottotitolo esplicativo",
+    "Sommario/esecutivo iniziale (3-5 righe)",
     "Inquadramento normativo di riferimento",
     "Analisi puntuale con citazioni (fonte + articolo + comma + data)",
-    "Applicazione pratica al caso tipo",
+    "Applicazione pratica con esempi concreti",
     "Conclusioni operative per il lettore"
 ])
 
+# FORMATTAZIONE WIX
+st.markdown("---")
+st.subheader("🎨 FORMATTAZIONE PER WIX")
+col1, col2 = st.columns(2)
+with col1:
+    testo_giustificato = st.checkbox("Testo giustificato", value=True)
+    paragrafi_brevi = st.checkbox("Paragrafi brevi (3-5 righe)", value=True)
+    uso_h2_h3 = st.checkbox("Gerarchia H2/H3 per sottotitoli", value=True)
+with col2:
+    grassetto_chiave = st.checkbox("Grassetto per concetti chiave", value=True)
+    corsivo_tecnico = st.checkbox("Corsivo per termini tecnici", value=True)
+    elenchi_minimali = st.checkbox("Elenchi solo se necessari", value=True)
+
 # GENERA ARTICOLO
 st.markdown("---")
-if st.button("🚀 GENERA PROMPT ARTICOLO", type="primary", use_container_width=True):
+if st.button("🚀 GENERA PROMPT ARTICOLO PROFESSIONALE", type="primary", use_container_width=True):
     if not titolo_articolo or not categoria:
         st.error("⚠️ Inserisci almeno titolo e categoria!")
     else:
-        # COSTRUISCI IL PROMPT
-        fonti_attive = []
-        if fonte_gazzetta: fonti_attive.append("Gazzetta Ufficiale / Normattiva")
-        if fonte_eurlex: fonti_attive.append("Regolamenti UE / EUR-Lex")
-        if fonte_agenzia_entrate: fonti_attive.append("Circolari Agenzia delle Entrate")
-        if fonte_inps: fonti_attive.append("Circolari INPS")
-        if fonte_cassazione: fonti_attive.append("Massime Cassazione (ufficiali)")
-        if fonte_regionale: fonti_attive.append("Normativa Regionale")
-        if fonte_comunale: fonti_attive.append("Regolamenti Comunali")
-        if fonte_ivass: fonti_attive.append("Regolamenti IVASS")
-        if fonte_altro: fonti_attive.append(fonte_altro)
+        # RACCOGLI FONTI
+        fonti_normative = []
+        if fonte_gazzetta: fonti_normative.append("Gazzetta Ufficiale / Normattiva")
+        if fonte_eurlex: fonti_normative.append("Regolamenti UE / EUR-Lex")
+        if fonte_agenzia_entrate: fonti_normative.append("Circolari Agenzia delle Entrate")
+        if fonte_interpelli_ade: fonti_normative.append("Risposte Interpello AdE")
+        if fonte_inps: fonti_normative.append("Circolari/Messaggi INPS")
+        if fonte_cassazione: fonti_normative.append("Massime Cassazione (ufficiali)")
+        if fonte_regionale: fonti_normative.append("Normativa Regionale")
+        if fonte_comunale: fonti_normative.append("Regolamenti Comunali")
+        if fonte_ivass: fonti_normative.append("Regolamenti IVASS")
+        if fonte_consap: fonti_normative.append("Norme CONSAP")
+        if fonte_altro: fonti_normative.append(fonte_altro)
         
+        banche_dati = []
+        if banco_sole24ore: banche_dati.append("Il Sole 24 Ore")
+        if banco_edotto: banche_dati.append("Edotto")
+        if banco_fiscalfocus: banche_dati.append("Fiscal Focus")
+        if banco_italiaoggi: banche_dati.append("Italia Oggi")
+        if banco_quattroruote: banche_dati.append("Quattroruote/Eurotax")
+        if banco_aci: banche_dati.append("ACI")
+        if banco_portale_ade: banche_dati.append("Portale Agenzia delle Entrate")
+        if banco_portale_inps: banche_dati.append("Portale INPS")
+        if banco_altri: banche_dati.append(banco_altri)
+        
+        piattaforme_img = []
+        if unsplash: piattaforme_img.append("Unsplash")
+        if pexels: piattaforme_img.append("Pexels")
+        if pixabay: piattaforme_img.append("Pixabay")
+        if freepik: piattaforme_img.append("Freepik (con attribuzione)")
+        if screenshot_proprio: piattaforme_img.append("Screenshot da portali ufficiali")
+        
+        # COSTRUISCI IL PROMPT
         prompt = f"""
 ✍️ ARTICOLO PROFESSIONALE PER STUDIO PRATICI — www.studiopratici.com
+═══════════════════════════════════════════════════════════════════════
 
-📋 METADATI
+📋 METADATI EDITORIALI
 Titolo: {titolo_articolo}
 Categoria: {categoria}
 Autore: {autore or 'Redazione Studio Pratici'}
@@ -147,135 +223,118 @@ Target: {target}
 Tono: {tono}
 Lunghezza: {lunghezza_articolo}
 
-🔍 SEO
+🔍 OTTIMIZZAZIONE SEO
 Meta descrizione: {meta_descrizione or 'Da definire (max 160 caratteri)'}
 Parole chiave: {parole_chiave or 'Da definire'}
 
-📚 FONTI NORMATIVE DA CITARE (SOLO QUESTE)
-{chr(10).join(['✓ ' + f for f in fonti_attive]) if fonti_attive else '✓ Fonti normative certe e verificabili (Gazzetta Ufficiale, Normattiva, EUR-Lex, Cassazione, siti .gov.it)'}
+📚 FONTI NORMATIVE DA UTILIZZARE (SOLO QUESTE)
+{chr(10).join(['✓ ' + f for f in fonti_normative]) if fonti_normative else '✓ Fonti normative certe e verificabili'}
 
-Formato citazione obbligatorio: [Fonte] [Tipo atto] n.[X] del [data], art.[Y], comma [Z]
-Esempio: Agenzia delle Entrate, Circolare n. 9/E del 14/02/2024, art. 1, comma 54
+📰 BANCHE DATI E DOTTRINA AUTORIZZATA
+{chr(10).join(['✓ ' + b for b in banche_dati]) if banche_dati else '✓ Dottrina da portali specializzati (Sole 24 Ore, Edotto, Fiscal Focus, Italia Oggi)'}
 
-📐 STRUTTURA RICHIESTA
-{chr(10).join(['• ' + s for s in struttura])}
+Formato citazione OBBLIGATORIO:
+• Normativa: [Fonte] [Tipo atto] n.[X] del [data], art.[Y], comma [Z]
+  Es: Agenzia delle Entrate, Circolare n. 9/E del 14/02/2024, art. 1, comma 54
+• Interpelli: [Organo] Risposta Interpello n.[X] del [data]
+  Es: Agenzia delle Entrate, Risposta Interpello n. 123 del 15/03/2024
+• Cassazione: Cass. [Sezione] n.[X] del [data] (massima ufficiale)
+  Es: Cass. Civ. Sez. Trib. n. 12345 del 10/05/2024
+• Dottrina: [Autore], "[Titolo]", [Testata], [Data]
+  Es: Rossi M., "Nuove scadenze fiscali", Il Sole 24 Ore, 20/01/2024
 
-🎯 ISTRUZIONI VINCOLANTI PER LA REDAZIONE
+📐 STRUTTURA RICHIESTA DELL'ARTICOLO
+{chr(10).join(['• ' + s for s in elementi_struttura])}
 
-1. FONTI E COPYRIGHT
-   ✓ Usa SOLO fonti normative certe e pubblicamente accessibili
-   ✓ Cita sempre: fonte, numero, data, articolo, comma
-   ✓ NON copiare testi integrali: parafrasa con attribuzione
-   ✓ Per sentenze: cita solo massime ufficiali Cassazione, non il testo integrale
-   ✓ Per articoli di dottrina: cita autore, testata, data, link se disponibile
-   ✓ Rispetta il diritto d'autore: citazioni brevi e finalizzate a commento/critica
+🎨 IMPAGINAZIONE E FORMATTAZIONE (WIX-READY)
+• Testo giustificato: {('SÌ' if testo_giustificato else 'NO')}
+• Paragrafi: {('brevi (3-5 righe)' if paragrafi_brevi else 'standard')}
+• Gerarchia titoli: {('H1 > H2 > H3' if uso_h2_h3 else 'H1 > H2')}
+• Evidenziazioni: {('grassetto per concetti chiave, corsivo per termini tecnici' if grassetto_chiave else 'minime')}
+• Elenchi: {('solo se strettamente necessari' if elenchi_minimali else 'liberi')}
 
-2. STILE DI SCRITTURA
-   • Italiano chiaro e professionale, adatto al target selezionato
-   • Evita gergo eccessivo se il target non è tecnico
-   • Usa connettivi logici: "pertanto", "di conseguenza", "inoltre"
-   • Struttura discorsiva: evita elenchi puntati se non necessari
+🖼️ GESTIONE IMMAGINI E CONTENUTI VISIVI
+Tipo articolo: {tipo_contenuto}
+{"✓ IMMAGINI PROCEDURALI RICHIESTE" if 'procedurale' in tipo_contenuto or 'tecnica' in tipo_contenuto else "✓ POche immagini (solo di contesto)"}
 
-3. CONTENUTO NORMATIVO
-   • Inquadra sempre il contesto normativo prima dell'analisi
-   • Spiega il PERCHÉ della norma, non solo il COSA
-   • Se la norma è ambigua o lacunosa, dichiaralo esplicitamente
-   • Non usare "si ritiene che", "prassi consolidata" senza fonte certa
-
-4. APPLICAZIONE PRATICA
-   • Traduci la norma in indicazioni operative per il lettore
-   • Se rilevante: indica scadenze, modulistica, portali ufficiali
-   • Suggerisci procedure verificabili (es: "accedere al portale Agenzia delle Entrate con SPID")
-
-5. IMMAGINI (se richieste)
-   • Suggerisci SOLO immagini royalty-free da: {', '.join(piattaforme) if suggerisci_immagini and piattaforme else 'Unsplash, Pexels, Pixabay'}
-   • Fornisci termini di ricerca specifici: "{termini_ricerca}" se specificato
-   • Indica sempre la licenza (es: "Unsplash License — libera per uso commerciale")
-   • Suggerisci didascalie descrittive e SEO-friendly
-
-6. SEO E FORMATTAZIONE WIX
-   • Usa H1 per il titolo, H2 per le sezioni principali, H3 per sottosezioni
-   • Inserisci parole chiave in modo naturale (non keyword stuffing)
-   • Meta descrizione: max 160 caratteri, accattivante, con CTA implicito
-   • Lunghezza paragrafi: 3-5 righe per leggibilità mobile
-   • Usa grassetto per concetti chiave, corsivo per termini tecnici
-
-7. DIVIETO ASSOLUTO
-   ✗ Opinioni personali non supportate da fonti
-   ✗ "Si ritiene che", "prassi comune" senza citazione certa
-   ✗ Copia-incolla di testi protetti da copyright
-   ✗ Immagini senza licenza chiara o attribuzione richiesta
-   ✗ Informazioni non verificate o datate
-
-✅ OUTPUT RICHIESTO
-Redigi l'articolo completo, pronto per l'editor Wix, con:
-- Titolo H1 + sottotitolo
-- Sommario iniziale (3-4 righe)
-- Corpo articolo con sezioni H2/H3
-- Citazioni normative nel formato indicato
-- Box "Da ricordare" (se selezionato)
-- Riferimenti normativi completi in fondo
-- Suggerimenti immagini con termini di ricerca e licenza (se richiesto)
-- Meta descrizione e parole chiave per SEO
-
-L'articolo deve sembrare scritto da un professionista senior dello studio, autorevole ma accessibile.
+ISTRUZIONI SPECIFICHE PER LE IMMAGINI:
 """
-        
-        st.success("✅ Prompt articolo generato!")
-        st.code(prompt, language="markdown")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.download_button(
-                label="📥 Scarica articolo .txt",
-                data=prompt,
-                file_name=f"articolo_{categoria.replace(' ', '_')}_{data_pubblicazione}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-        with col2:
-            st.info("💡 Copia il testo e incollalo in ChatGPT. L'output sarà pronto per Wix!")
 
-# SIDEBAR
-with st.sidebar:
-    st.header("ℹ️ Come usare questa pagina")
-    st.markdown("""
-    ### Per creare articoli professionali:
-    
-    1. **Compila i metadati** (titolo, categoria, autore, data)
-    
-    2. **Definisci SEO** (meta descrizione, parole chiave)
-    
-    3. **Scegli target e tono** (tecnico, divulgativo, misto)
-    
-    4. **Seleziona le fonti** normative da citare
-    
-    5. **(Opzionale) Attiva suggerimenti immagini** royalty-free
-    
-    6. **Scegli la struttura** dell'articolo
-    
-    7. **Clicca "Genera Prompt"** e copia in ChatGPT
-    
-    ---
-    
-    ### 📋 PROTOCOLLO COPYRIGHT
-    
-    Questo generatore vincola l'AI a:
-    - Citare fonti, non copiare testi
-    - Usare solo massime ufficiali Cassazione
-    - Parafrasare con attribuzione
-    - Suggerire solo immagini royalty-free
-    
-    ---
-    
-    ### 🌐 OUTPUT WIX-READY
-    
-    L'articolo generato è formattato per:
-    - Editor Wix (H1/H2/H3, paragrafi brevi)
-    - SEO (meta description, parole chiave)
-    - Mobile-first (leggibilità)
-    """)
-    
-    st.markdown("---")
-    st.markdown("**Versione:** v1.0_2026-03")
-    st.markdown("**Sito:** www.studiopratici.com")
+        if 'procedurale' in tipo_contenuto or 'tecnica' in tipo_contenuto:
+            prompt += f"""
+1. ANALISI DEL CONTENUTO:
+   • Identifica i passaggi operativi che richiedono illustrazione visiva
+   • Per ogni passaggio critico, valuta se un'immagine può migliorare la comprensione
+   • Esempio: "Guida collegamento POS e registratore di cassa" → servono immagini che mostrano:
+     - Il POS e il registratore di cassa
+     - I cavi/connessioni (USB, Ethernet, WiFi)
+     - Le schermate di configurazione
+     - Il procedimento passo-passo
+
+2. RICERCA IMMAGINI PERTINENTI:
+   • Piattaforme autorizzate: {', '.join(piattaforme_img) if piattaforme_img else 'Unsplash, Pexels'}
+   • Termini di ricerca: "{termini_ricerca_custom if 'termini_ricerca_custom' in locals() and termini_ricerca_custom else titolo_articolo}"
+   • Cerca immagini che mostrino ESPPLICITAMENTE il procedimento/operazione
+   
+3. CRITERI DI SELEZIONE:
+   • PERTINENZA: L'immagine deve mostrare ESATTAMENTE ciò che descrive il testo
+   • QUALITÀ: Alta risoluzione, professionale, leggibile
+   • ATTUALITÀ: Dispositivi/software recenti (non obsoleti)
+   • LICENZA: Solo royalty-free o fair use per screenshot portali ufficiali
+   
+4. SE NON TROVI IMMAGINI PERTINENTI:
+   • NON inserire immagini generiche o decorative
+   • Scrivi: "[IMMAGINE: descrivi cosa servirebbe ma non è stata trovata]"
+   • Suggerisci: "Scattare screenshot proprio o creare grafica ad hoc"
+   
+5. DIDASCALIE OBBLIGATORIE:
+   • Ogni immagine deve avere didascalia descrittiva e SEO-friendly
+   • Formato: "Fig. X - [Descrizione breve ma completa]"
+   • Esempio: "Fig. 1 - Collegamento cavo USB tra POS e registratore di cassa"
+
+"""
+        else:
+            prompt += """
+1. IMMAGINI MINIMALI:
+   • Solo 1-2 immagini di contesto/introduzione
+   • Evita immagini decorative superflue
+   • Priorità a: concetti astratti, simboli professionali, infografiche
+
+"""
+
+        prompt += f"""
+2. FONTI CONSENTITE: {', '.join(piattaforme_img) if piattaforme_img else 'Unsplash, Pexels, Pixabay'}
+
+═══════════════════════════════════════════════════════════════════════
+🎯 ISTRUZIONI VINCOLANTI PER LA REDAZIONE
+═══════════════════════════════════════════════════════════════════════
+
+1. FONTI E COPYRIGHT - RISPETTO ASSOLUTO
+   ✓ Usa SOLO fonti normative certe e pubblicamente accessibili
+   ✓ Cita SEMPRE: fonte, numero, data, articolo, comma
+   ✓ Per interpelli: cita solo risposte ufficiali AdE/INPS/Ministeri
+   ✓ Per dottrina: cita autore, testata, data (Sole 24 Ore, Edotto, Fiscal Focus, Italia Oggi)
+   
+   ✗ VIETATO:
+   • Copiare testi integrali protetti da copyright
+   • Parafrasare senza attribuzione
+   • Usare "si ritiene che", "prassi consolidata" senza fonte certa
+   • Citare sentenze senza numero/data/sezione
+
+2. STILE DI SCRITTURA PROFESSIONALE
+   • Adatta il linguaggio al target: {target}
+   • Tono: {tono}
+   • Usa connettivi logici: "pertanto", "di conseguenza", "inoltre", "tuttavia"
+   • Struttura discorsiva ma organizzata (evita muri di testo)
+   • Spiega il PERCHÉ normativo, non solo il COSA
+
+3. RIGORE NORMATIVO
+   • Inquadra sempre il contesto prima dell'analisi
+   • Se la norma è ambigua/lacunosa, dichiaralo ESPPLICITAMENTE
+   • Per zone grigie: indica organo competente per interpello
+   • NON esprimere opinioni personali non supportate da fonti
+
+4. APPLICAZIONE PRATICA E PROCEDURE
+   • Traduci la norma in indicazioni OPERATIVE per il lettore
+   • Se guida procedurale: step-by-step numerati e chiari
+   • Indica: scaden
