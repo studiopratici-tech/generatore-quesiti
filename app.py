@@ -210,8 +210,16 @@ col1, col2 = st.columns(2)
 with col1:
     soggetto = st.text_input("Soggetto interessato", placeholder="es. medico forfettario, SRL, dipendente...")
     periodo = st.text_input("Periodo di riferimento", placeholder="es. redditi 2025, CU 2026...")
+    
+    importo = st.number_input("💰 Importo coinvolto (€)", min_value=0.0, step=100.0)
 with col2:
     documenti = st.text_input("Documenti disponibili", placeholder="es. circolare AdE, interpello, contratto...")
+    
+    modalita_pagamento = st.selectbox(
+        "💳 Modalità di pagamento",
+        ["Non specificata", "Contanti diretti", "Contanti tramite banca/poste", "Bonifico", "Assegno"]
+    )
+    
     urgenza = st.selectbox("Urgenza", ["Normale", "Entro 48h", "Oggi"])
 
 # GENERA PROMPT
@@ -244,6 +252,8 @@ Riferimento: {riferimento}
 📌 CONTESTO
 • Soggetto: {soggetto if soggetto else 'Non specificato'}
 • Periodo: {periodo if periodo else 'Non specificato'}
+• Importo: {importo if importo else 'Non specificato'}
+• Modalità pagamento: {modalita_pagamento}
 • Documenti: {documenti if documenti else 'Non specificato'}
 • Urgenza: {urgenza}
 
@@ -375,6 +385,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
