@@ -260,18 +260,85 @@ elementi_struttura = st.multiselect("Sezioni dell'articolo", [
     "Conclusioni operative per il lettore"
 ])
 
-# FORMATTAZIONE
+# FORMATTAZIONE COMPLETA
 st.markdown("---")
 st.subheader("🎨 FORMATTAZIONE PER WIX")
-col1, col2 = st.columns(2)
+
+col1, col2, col3 = st.columns(3)
+
 with col1:
+    st.markdown("**📝 TIPOGRAFIA**")
     testo_giustificato = st.checkbox("Testo giustificato", value=True)
     paragrafi_brevi = st.checkbox("Paragrafi brevi (3-5 righe)", value=True)
-    uso_h2_h3 = st.checkbox("Gerarchia H2/H3 per sottotitoli", value=True)
+    
+    tipo_font = st.selectbox(
+        "Tipo di carattere",
+        [
+            "Arial/Helvetica (sans-serif, moderno)",
+            "Times New Roman (serif, tradizionale)",
+            "Georgia (serif, web-friendly)",
+            "Verdana (sans-serif, leggibile)",
+            "Calibri (modern, pulito)",
+            "Roboto (Google Fonts, moderno)",
+            "Open Sans (web, versatile)",
+            "Lato (professionale)",
+            "Montserrat (elegante)",
+            "Playfair Display (serif, elegante)"
+        ],
+        index=0
+    )
+    
 with col2:
+    st.markdown("**📏 DIMENSIONI**")
+    dimensione_font = st.selectbox(
+        "Dimensione carattere corpo testo",
+        [
+            "Piccola (10-11pt) - per articoli densi",
+            "Normale (12pt) - standard web",
+            "Media (13-14pt) - più leggibile",
+            "Grande (15-16pt) - massima leggibilità"
+        ],
+        index=1
+    )
+    
+    interlinea = st.selectbox(
+        "Interlinea",
+        [
+            "Singola (1.0) - compatta",
+            "1.15 - leggermente ariosa",
+            "1.5 - standard leggibilità",
+            "Doppia (2.0) - massima leggibilità"
+        ],
+        index=2
+    )
+    
+with col3:
+    st.markdown("**📑 STRUTTURA TITOLI**")
+    gerarchia_titoli = st.radio(
+        "Livelli di sottotitoli",
+        [
+            "H1 > H2 (solo titoli principali)",
+            "H1 > H2 > H3 (titoli + sottotitoli)",
+            "H1 > H2 > H3 > H4 (struttura completa)"
+        ],
+        index=1
+    )
+    
+    uso_h2_h3 = st.checkbox("Gerarchia H2/H3 per sottotitoli", value=True)
+
+st.markdown("---")
+st.subheader("🎨 STILI E EVIDENZIAZIONI")
+col1, col2 = st.columns(2)
+with col1:
     grassetto_chiave = st.checkbox("Grassetto per concetti chiave", value=True)
     corsivo_tecnico = st.checkbox("Corsivo per termini tecnici", value=True)
     elenchi_minimali = st.checkbox("Elenchi solo se necessari", value=True)
+    box_evidenziazione = st.checkbox("Box colorati per avvisi/novità", value=True)
+with col2:
+    numerazione_sezioni = st.checkbox("Numerazione sezioni (1., 1.1, 1.1.1)", value=True)
+    citazioni_evidenziate = st.checkbox("Citazioni normative in box separati", value=True)
+    link_ipertestuali = st.checkbox("Link attivi nel testo", value=True)
+    note_piè_pagina = st.checkbox("Note a piè di pagina", value=False)
 
 # GENERA ARTICOLO
 st.markdown("---")
@@ -363,7 +430,6 @@ if st.button("🚀 GENERA PROMPT ARTICOLO PROFESSIONALE", type="primary", use_co
         if freepik: piattaforme_img.append("Freepik (con attribuzione)")
         if screenshot_proprio: piattaforme_img.append("Screenshot da portali ufficiali")
         
-        # Aggiungi fonti personalizzate
         if altre_fonti:
             fonti_custom = [f.strip() for f in altre_fonti.split('\n') if f.strip()]
             banche_dati.extend(fonti_custom)
@@ -447,11 +513,28 @@ if st.button("🚀 GENERA PROMPT ARTICOLO PROFESSIONALE", type="primary", use_co
         prompt += "\n"
         
         prompt += "🎨 IMPAGINAZIONE E FORMATTAZIONE (WIX-READY)\n"
-        prompt += f"• Testo giustificato: {'SÌ' if testo_giustificato else 'NO'}\n"
-        prompt += f"• Paragrafi: {'brevi (3-5 righe)' if paragrafi_brevi else 'standard'}\n"
-        prompt += f"• Gerarchia titoli: {'H1 > H2 > H3' if uso_h2_h3 else 'H1 > H2'}\n"
-        prompt += f"• Evidenziazioni: {'grassetto per concetti chiave, corsivo per termini tecnici' if grassetto_chiave else 'minime'}\n"
-        prompt += f"• Elenchi: {'solo se strettamente necessari' if elenchi_minimali else 'liberi'}\n\n"
+        prompt += "=" * 65 + "\n\n"
+        
+        prompt += f"📝 TIPOGRAFIA:\n"
+        prompt += f"• Font: {tipo_font}\n"
+        prompt += f"• Dimensione corpo testo: {dimensione_font}\n"
+        prompt += f"• Interlinea: {interlinea}\n"
+        prompt += f"• Allineamento: {'Giustificato' if testo_giustificato else 'A sinistra'}\n"
+        prompt += f"• Lunghezza paragrafi: {'Brevi (3-5 righe)' if paragrafi_brevi else 'Standard'}\n\n"
+        
+        prompt += f"📑 STRUTTURA TITOLI:\n"
+        prompt += f"• Gerarchia: {gerarchia_titoli}\n"
+        prompt += f"• Numerazione sezioni: {'SÌ (1., 1.1, 1.1.1)' if numerazione_sezioni else 'NO'}\n"
+        prompt += f"• Uso H2/H3: {'Attivo' if uso_h2_h3 else 'Solo H2'}\n\n"
+        
+        prompt += f"🎨 STILI E EVIDENZIAZIONI:\n"
+        prompt += f"• Grassetto: {'Concetti chiave' if grassetto_chiave else 'Minimo'}\n"
+        prompt += f"• Corsivo: {'Termini tecnici' if corsivo_tecnico else 'Minimo'}\n"
+        prompt += f"• Elenchi: {'Solo se necessari' if elenchi_minimali else 'Liberi'}\n"
+        prompt += f"• Box evidenziazione: {'SÌ (avvisi, novità, attenzione)' if box_evidenziazione else 'NO'}\n"
+        prompt += f"• Citazioni in box: {'SÌ' if citazioni_evidenziate else 'NO'}\n"
+        prompt += f"• Link attivi: {'SÌ' if link_ipertestuali else 'NO'}\n"
+        prompt += f"• Note piè pagina: {'SÌ' if note_piè_pagina else 'NO'}\n\n"
         
         prompt += "🖼️ GESTIONE IMMAGINI E CONTENUTI VISIVI\n"
         prompt += f"Tipo articolo: {tipo_contenuto}\n"
