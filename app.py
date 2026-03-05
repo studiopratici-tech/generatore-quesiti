@@ -247,9 +247,7 @@ Riferimento: {riferimento}
 • Documenti: {documenti if documenti else 'Non specificato'}
 • Urgenza: {urgenza}
 
-
 🎯 ISTRUZIONI VINCOLANTI PER LA RISPOSTA
-
 Sei un professionista senior che risponde a un quesito dello studio.
 
 
@@ -291,6 +289,7 @@ Sei un professionista senior che risponde a un quesito dello studio.
    • Spiega il PERCHÉ normativo, non solo il cosa
    • Meglio 15 righe chiare che 3 criptiche
    • Sviscera tutto l'argomento in ogni sua sfumatura significativa per il quesito posto (Esempio: se ti chiedono se è lecito pagare l'anticipo TFR in contanti menziona i requisiti per richiedere l'anticipo TFR)
+   • Poni domande, se lo ritieni opportuno, per offrire una risposta completa e puntuale (Esempio: ti viene menzionato la liceità di un pagamento in contanti. Chiedi se il pagamento in contanti eccede il limite normativo per essere considerato legale ovvero nel 2026 sino a € 5.000,00)
 
 
 ▌ 5. STRUTTURA OBBLIGATORIA
@@ -370,6 +369,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
