@@ -431,7 +431,7 @@ Se manca anche solo uno di questi elementi, la risposta è errata. Riscrivila fi
         # COSTRUISCI IL PROMPT COMPLETO
         prompt = f"""
 
-✅ RISPONDI ORA AL QUESITO
+RISPONDI ORA AL QUESITO
 """
         
         # MOSTRA IL PROMPT GENERATO
@@ -495,6 +495,7 @@ with st.sidebar:
 st.markdown("---")
 
 st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
+
 
 
 
