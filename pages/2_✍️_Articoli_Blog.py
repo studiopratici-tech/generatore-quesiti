@@ -231,34 +231,39 @@ with col3:
     screenshot_proprio = st.checkbox("Screenshot da portali ufficiali")
     nessuna_immagine = st.checkbox("Nessuna immagine")
 
+# INIZIALIZZA SESSION STATE (per mantenere le selezioni tra i rerun)
+if 'struttura_articolo' not in st.session_state:
+    st.session_state.struttura_articolo = []
+
 # STRUTTURA
 st.markdown("---")
 st.subheader("📐 STRUTTURA E IMPAGINAZIONE")
-elementi_struttura = st.multiselect("Sezioni dell'articolo", [
-    "Titolo H1 accattivante + sottotitolo esplicativo",
-    "Sommario/esecutivo iniziale (3-5 righe)",
-    "Indice dei contenuti (per articoli lunghi)",
-    "Inquadramento normativo di riferimento",
-    "Analisi puntuale con citazioni (fonte + articolo + comma + data)",
-    "Applicazione pratica con esempi concreti",
-    "Procedura operativa passo-passo (se guida)",
-    "Immagini esplicative con didascalie (se pertinenti)",
-    "Box 'Cosa cambia' o 'Novità'",
-    "Box 'Da ricordare' con punti chiave",
-    "Prassi operative e suggerimenti procedurali",
-    "Eventuali lacune o zone grigie (dichiarate esplicitamente)",
-    "FAQ (domande frequenti)",
-    "Conclusioni operative per il lettore",
-    "Riferimenti normativi completi in fondo",
-    "Link utili e approfondimenti"
-], default=[
-    "Titolo H1 accattivante + sottotitolo esplicativo",
-    "Sommario/esecutivo iniziale (3-5 righe)",
-    "Inquadramento normativo di riferimento",
-    "Analisi puntuale con citazioni (fonte + articolo + comma + data)",
-    "Applicazione pratica con esempi concreti",
-    "Conclusioni operative per il lettore"
-])
+elementi_struttura = st.multiselect(
+    "Sezioni dell'articolo", 
+    [
+        "Titolo H1 accattivante + sottotitolo esplicativo",
+        "Sommario/esecutivo iniziale (3-5 righe)",
+        "Indice dei contenuti (per articoli lunghi)",
+        "Inquadramento normativo di riferimento",
+        "Analisi puntuale con citazioni (fonte + articolo + comma + data)",
+        "Applicazione pratica con esempi concreti",
+        "Procedura operativa passo-passo (se guida)",
+        "Immagini esplicative con didascalie (se pertinenti)",
+        "Box 'Cosa cambia' o 'Novità'",
+        "Box 'Da ricordare' con punti chiave",
+        "Prassi operative e suggerimenti procedurali",
+        "Eventuali lacune o zone grigie (dichiarate esplicitamente)",
+        "FAQ (domande frequenti)",
+        "Conclusioni operative per il lettore",
+        "Riferimenti normativi completi in fondo",
+        "Link utili e approfondimenti"
+    ],
+    default=st.session_state.struttura_articolo,  # ← Usa session state invece di default fisso
+    key="key_struttura"
+)
+
+# SALVA LO STATO
+st.session_state.struttura_articolo = elementi_struttura
 
 # FORMATTAZIONE COMPLETA
 st.markdown("---")
