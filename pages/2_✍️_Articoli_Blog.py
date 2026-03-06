@@ -222,8 +222,8 @@ st.markdown("---")
 st.subheader("📸 FONTI IMMAGINI ROYALTY-FREE")
 col1, col2, col3 = st.columns(3)
 with col1:
-    unsplash = st.checkbox("Unsplash", value=True)
-    pexels = st.checkbox("Pexels", value=True)
+    unsplash = st.checkbox("Unsplash")
+    pexels = st.checkbox("Pexels")
 with col2:
     pixabay = st.checkbox("Pixabay")
     freepik = st.checkbox("Freepik (con attribuzione)")
