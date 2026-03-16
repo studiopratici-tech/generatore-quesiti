@@ -18,7 +18,7 @@ st.markdown("*Inserisci un quesito e trova la risposta negli articoli esistenti*
 st.markdown("---")
 
 # Percorso default cartella condivisa
-PERCORSO_DEFAULT = r"\\SERVER\public\Notizie Fiscali e Lavoro"
+PERCORSO_DEFAULT = "\\SERVER\public\Notizie Fiscali e Lavoro"
 
 # Sidebar
 with st.sidebar:
