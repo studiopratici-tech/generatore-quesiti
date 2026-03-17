@@ -262,7 +262,6 @@ Agisci come **Consulente Fiscale Senior specializzato in ISA (Indici Sintetici d
 ### 1.3 Calcolo Totale Ricavi Netto
 Totale Ricavi Netto = Σ(TD01) + Σ(TD04 con segno negativo)
 
-
 ---
 
 ## 🧩 FASE 2: COMPILAZIONE QUADRO C
