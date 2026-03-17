@@ -183,18 +183,18 @@ if istruzioni_file:
         
         with col1:
             st.markdown("**Sezioni da includere:**")
-            include_specializzazione = st.checkbox("✓ Specializzazione (C01-C28)", value=True)
-            include_subappalto = st.checkbox("✓ Subappalto (C29)", value=True)
-            include_realizzazione = st.checkbox("✓ Realizzazione (C31-C32)", value=True)
-            include_localizzazione = st.checkbox("✓ Localizzazione (C33-C41)", value=True)
-            include_ambito = st.checkbox("✓ Ambito attività (C46-C47)", value=True)
+            include_specializzazione = st.checkbox("✓ Specializzazione (C01-C28)", )
+            include_subappalto = st.checkbox("✓ Subappalto (C29)", )
+            include_realizzazione = st.checkbox("✓ Realizzazione (C31-C32)", )
+            include_localizzazione = st.checkbox("✓ Localizzazione (C33-C41)", )
+            include_ambito = st.checkbox("✓ Ambito attività (C46-C47)", )
         
         with col2:
             st.markdown("**Opzioni aggiuntive:**")
-            include_tracing = st.checkbox("✓ Tracciabilità fatture", value=True)
-            include_ambiguity = st.checkbox("✓ Segnalazione ambiguità", value=True)
-            include_assumptions = st.checkbox("✓ Assunzioni effettuate", value=True)
-            include_signature = st.checkbox("✓ Firma finale", value=True)
+            include_tracing = st.checkbox("✓ Tracciabilità fatture", )
+            include_ambiguity = st.checkbox("✓ Segnalazione ambiguità", )
+            include_assumptions = st.checkbox("✓ Assunzioni effettuate", )
+            include_signature = st.checkbox("✓ Firma finale", )
         
         st.markdown("---")
         
