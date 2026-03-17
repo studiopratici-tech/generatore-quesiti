@@ -1,8 +1,8 @@
 import streamlit as st
 import PyPDF2
-import io
 import re
 from datetime import datetime
+import io
 
 # CONFIGURAZIONE PAGINA
 st.set_page_config(
@@ -135,7 +135,7 @@ def extract_isa_info(text):
                 break
     
     # Cerca il periodo d'imposta
-    periodo_pattern = r'PERIODO\s+D['"'"']?IMPOSTA\s+(\d{4})'
+    periodo_pattern = r'PERIODO\s+D["\']?IMPOSTA\s+(\d{4})'
     periodo_match = re.search(periodo_pattern, text)
     if periodo_match:
         info['periodo'] = periodo_match.group(1)
@@ -183,18 +183,18 @@ if istruzioni_file:
         
         with col1:
             st.markdown("**Sezioni da includere:**")
-            include_specializzazione = st.checkbox("✓ Specializzazione (C01-C28)", )
-            include_subappalto = st.checkbox("✓ Subappalto (C29)", )
-            include_realizzazione = st.checkbox("✓ Realizzazione (C31-C32)", )
-            include_localizzazione = st.checkbox("✓ Localizzazione (C33-C41)", )
-            include_ambito = st.checkbox("✓ Ambito attività (C46-C47)", )
+            include_specializzazione = st.checkbox("✓ Specializzazione (C01-C28)", value=True)
+            include_subappalto = st.checkbox("✓ Subappalto (C29)", value=True)
+            include_realizzazione = st.checkbox("✓ Realizzazione (C31-C32)", value=True)
+            include_localizzazione = st.checkbox("✓ Localizzazione (C33-C41)", value=True)
+            include_ambito = st.checkbox("✓ Ambito attività (C46-C47)", value=True)
         
         with col2:
             st.markdown("**Opzioni aggiuntive:**")
-            include_tracing = st.checkbox("✓ Tracciabilità fatture", )
-            include_ambiguity = st.checkbox("✓ Segnalazione ambiguità", )
-            include_assumptions = st.checkbox("✓ Assunzioni effettuate", )
-            include_signature = st.checkbox("✓ Firma finale", )
+            include_tracing = st.checkbox("✓ Tracciabilità fatture", value=True)
+            include_ambiguity = st.checkbox("✓ Segnalazione ambiguità", value=True)
+            include_assumptions = st.checkbox("✓ Assunzioni effettuate", value=True)
+            include_signature = st.checkbox("✓ Firma finale", value=True)
         
         st.markdown("---")
         
@@ -262,6 +262,7 @@ Agisci come **Consulente Fiscale Senior specializzato in ISA (Indici Sintetici d
 ### 1.3 Calcolo Totale Ricavi Netto
 Totale Ricavi Netto = Σ(TD01) + Σ(TD04 con segno negativo)
 
+
 ---
 
 ## 🧩 FASE 2: COMPILAZIONE QUADRO C
@@ -307,57 +308,4 @@ Segnala OBBLIGATORIAMENTE se:
 - [ ] Σ(Campi specializzazione) = 100% ±0,1%
 - [ ] C31 + C32 = 100%
 - [ ] Σ(C36:C41) = 100%
-- [ ] C46 + C47 = 100%
-- [ ] Note di credito applicate come storni
-- [ ] Nessun dato inventato
-
----
-
-## 📤 FORMATO OUTPUT RICHIESTO
-
-### 📊 RIEPILOGO RICAVI
-- Totale Ricavi Netto: € [valore]
-- N. documenti: [n]
-- Periodo: [data min] – [data max]
-
-### 📋 QUADRO C COMPILATO
-| Rigo | Descrizione | Valore | Fatture Incluse |
-|------|-------------|--------|-----------------|
-| C..  | [Campo]     | ...    | [Numeri]        |
-
-### ⚠️ NOTE E CRITICITÀ
-[Tabella ambiguità]
-
-### 🔍 ASSUNZIONI EFFETTUATE
-[Elenco assunzioni]
-
-### 🛡️ FIRMA FINALE
-Villafranca in Lunigiana, {datetime.now().strftime('%d/%m/%Y')}
-Firma: Studio Pratici
-
----
-
-✅ **INIZIA ORA L'ANALISI DEI FILE ALLEGATI**
-"""
-            
-            # Mostra il prompt
-            st.success("✅ Prompt generato con successo!")
-            st.code(prompt, language="markdown")
-            
-            # Download button
-            st.download_button(
-                label="📥 Scarica prompt come .txt",
-                data=prompt,
-                file_name=f"ISA_{isa_info['codice'] or 'QuadroC'}_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-            
-            st.info("💡 **Istruzioni**: Copia il prompt e incollalo in una nuova chat con i PDF allegati")
-
-else:
-    st.warning("⚠️ Carica almeno il file delle istruzioni ISA per procedere")
-
-# FOOTER
-st.markdown("---")
-st.markdown("*ISA Prompt Generator v1.0 - Lettura automatica PDF | Zero invenzioni | 100% accuratezza*")
+- [
