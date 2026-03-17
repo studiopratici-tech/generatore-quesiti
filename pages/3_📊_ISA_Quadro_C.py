@@ -3,8 +3,9 @@ import pdfplumber
 import re
 import tempfile
 import os
+from datetime import datetime
 
-st.set_page_config(page_title="IT ISA Prompt Generator", layout="wide")
+st.set_page_config(page_title="ISA Universal Prompt Generator", layout="wide")
 
 def extract_text_from_pdf(uploaded_file):
     """Estrae tutto il testo dal PDF"""
@@ -25,160 +26,280 @@ def extract_text_from_pdf(uploaded_file):
     except Exception as e:
         return None
 
-def find_isa_code(text):
-    """Trova il codice ISA nel testo"""
-    # Pattern per codici ISA: 2 lettere + 2-3 numeri + 1 lettera
-    pattern = r"\b([A-Z]{2}\d{2,3}[A-Z])\b"
+def identify_fields_to_compile(text, isa_code):
+    """Identifica i campi del Quadro C da compilare per questo specifico ISA"""
+    fields = []
+    
+    # Cerca pattern C01, C02, ecc. nel testo delle istruzioni
+    pattern = r'\bC(\d{2,3})\b'
     matches = re.findall(pattern, text)
     
-    # Ritorna il primo codice ISA valido trovato
-    if matches:
-        return matches[0]
-    return None
-
-def extract_quadro_c_fields(text):
-    """Estrae i campi del Quadro C dal testo del PDF"""
-    # Cerca pattern come C01, C02, C10, C100, ecc.
-    fields = re.findall(r'\bC(\d{2,3})\b', text)
-    # Converte in formato C01, C02, ecc. e rimuove duplicati
-    unique_fields = sorted(set([f"C{int(f):02d}" for f in fields]))
-    return unique_fields[:50]  # Limita a 50 campi max
-
-def extract_keywords_from_text(text, isa_code):
-    """Estrae parole chiave rilevanti dal PDF"""
-    # Cerca sezioni rilevanti nel testo
-    keywords = []
+    # Converte in formato standard e rimuove duplicati
+    unique_fields = sorted(set([f"C{int(f):02d}" for f in matches]))
     
-    # Parole comuni ISA da cercare
-    common_terms = [
-        "commercio", "vendita", "negozio", "ambulante",
-        "costruzioni", "edilizia", "lavori", "cantieri",
-        "professionista", "studi", "consulenza", "servizi",
-        "manifatturiero", "produzione", "trasformazione",
-        "alberghi", "ristoranti", "turismo",
-        "trasporti", "logistica",
-        "agricoltura", "coltivazioni"
+    # Filtra solo i campi rilevanti (di solito fino a C100)
+    for field in unique_fields:
+        field_num = int(field[1:])
+        if 1 <= field_num <= 100:  # Campi C01-C100
+            fields.append(field)
+    
+    return fields
+
+def extract_compilation_rules(text, isa_code):
+    """Estrae le regole specifiche di compilazione dal PDF"""
+    rules = []
+    
+    # Cerca sezioni con "istruzioni", "note", "compilazione"
+    text_lower = text.lower()
+    
+    # Pattern per trovare istruzioni specifiche
+    instruction_patterns = [
+        r'compilare.*?se.*?(?:campo|rigo).*?(?:\d+|[A-Z])',
+        r'indicare.*?nel.*?campo.*?C\d+',
+        r'non compilare.*?(?:se|nel caso)',
+        r'obbligatorio.*?(?:per|se)',
+        r'campo.*?C\d+.*?(?:deve|va).*?(?:compilato|inserito)'
     ]
     
-    text_lower = text.lower()
-    for term in common_terms:
-        if term in text_lower:
-            keywords.append(term)
+    for pattern in instruction_patterns:
+        matches = re.findall(pattern, text_lower, re.IGNORECASE)
+        rules.extend(matches)
     
-    return list(set(keywords))[:15]  # Max 15 keywords
+    # Rimuovi duplicati e limita
+    unique_rules = list(set(rules))[:20]
+    
+    return unique_rules
 
-def generate_universal_prompt(isa_code, fields, keywords, description=""):
-    """Genera un prompt universale per qualsiasi ISA"""
+def extract_sector_info(text):
+    """Estrae informazioni sul settore dal PDF"""
+    keywords = []
     
-    if not description:
-        description = f"Modello ISA {isa_code}"
+    # Cerca il titolo/descrizione del modello
+    title_patterns = [
+        r'indice sintetico.*?(?:di affidabilità)?\s*(?:-|\n)\s*(.+?)(?:\n|$)',
+        r'modello.*?ISA.*?(?:-|\n)\s*(.+?)(?:\n|$)',
+        r'(commercio|edilizia|professioni|manifatturiero|servizi|trasporti|turismo|agricoltura)'
+    ]
     
-    fields_str = ", ".join(fields) if fields else "Campi del Quadro C da identificare"
-    keywords_str = ", ".join(keywords) if keywords else "settori di attività"
+    for pattern in title_patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        keywords.extend(matches)
+    
+    return list(set(keywords))[:10]
+
+def generate_universal_compilation_prompt(isa_code, fields, rules, sector_info, fatturato=None):
+    """Genera un prompt UNIVERSALE per la compilazione del Quadro C"""
+    
+    fields_str = ", ".join(fields) if fields else "Campi da identificare"
+    
+    # Sezione fatturato se fornito
+    fatturato_section = ""
+    if fatturato:
+        fatturato_section = f"""
+📊 DATI AZIENDALI:
+Fatturato dichiarato: € {fatturato:,.2f}
+Anno di riferimento: {datetime.now().year - 1}
+"""
+    
+    # Regole specifiche se presenti
+    rules_section = ""
+    if rules:
+        rules_section = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 ISTRUZIONI SPECIFICHE DAL MODELLO {isa_code}:
+
+{chr(10).join(f"• {rule}" for rule in rules[:10])}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+"""
     
     prompt = f"""
-╔══════════════════════════════════════════════════════════════╗
-║           PROMPT ISA {isa_code} - ANALISI FISCALE            ║
-╚══════════════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════╗
+║           GUIDA UNIVERSALE COMPILAZIONE QUADRO C                         ║
+║                     ISA {isa_code}                                        ║
+══════════════════════════════════════════════════════════════════════════╝
 
-RUOLO:
-Sei un esperto consulente fiscale specializzato in ISA (Indici Sintetici di Affidabilità) con focus sul modello {isa_code}.
+{fatturato_section}
+🎯 MODELLO DI RIFERIMENTO:
+Codice ISA: {isa_code}
+Settore: {', '.join(sector_info) if sector_info else 'Da identificare'}
 
-MODELLO DI RIFERIMENTO:
-{description}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CAMPI DEL QUADRO C DA ANALIZZARE:
+📋 CAMPI DEL QUADRO C DA COMPILARE:
+
 {fields_str}
 
-CONTESTO OPERATIVO E SETTORIALE:
-{keywords_str}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-ISTRUZIONI SPECIFICHE:
-1. Analizza i dati forniti considerando ESCLUSIVAMENTE i parametri del modello {isa_code}
-2. Valuta la coerenza tra i campi del Quadro C compilati
-3. Identifica eventuali anomalie o incongruenze
-4. Considera le specificità del settore: {keywords_str}
-5. Ignora completamente parametri di altri modelli ISA
+✏️ ISTRUZIONI UNIVERSALI DI COMPILAZIONE:
 
-OUTPUT RICHIESTO:
-- Analisi dettagliata dei campi rilevanti
-- Valutazione della coerenza interna
-- Eventuali criticità riscontrate
-- Raccomandazioni specifiche per il modello {isa_code}
+Per CIASCUN campo del Quadro C elencato sopra, segui queste regole:
+
+1️⃣ **ANALISI DEL CAMPO**
+   - Leggi attentamente la descrizione del campo nelle istruzioni ISA
+   - Verifica se il campo è OBBLIGATORIO per il tuo modello
+   - Controlla se ci sono condizioni specifiche per la compilazione
+
+2️⃣ **RACCOLTA DATI**
+   - Individua il dato corretto dalla contabilità
+   - Verifica la coerenza con altri campi compilati
+   - Controlla che il valore sia congruo con il fatturato
+
+3️⃣ **COMPILAZIONE**
+   - Inserisci il valore numerico ESATTO (senza migliaia separatori)
+   - Usa decimali solo se richiesti (di solito 2 cifre)
+   - Se il campo non è applicabile, lascia vuoto o inserisci 0
+
+4️⃣ **VERIFICA COERENZA**
+   - Controlla che la somma dei campi sia coerente
+   - Verifica che non ci siano duplicazioni
+   - Assicurati che i valori siano proporzionati al fatturato
+
+{rules_section}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 FORMATO DI RISPOSTA RICHIESTO:
+
+Per ogni campo, compila seguendo questo schema:
+
+┌─────────────────────────────────────────────────────────────┐
+│ CAMPO: C01                                                   │
+│ DESCRIZIONE: [breve descrizione dal manuale]                │
+│ VALORE: [inserire valore numerico]                          │
+│ NOTE: [eventuali note o criticità]                          │
+│ FONTI DATI: [da quale documento/conto deriva]               │
+└─────────────────────────────────────────────────────────────┘
+
+Ripeti per TUTTI i campi elencati.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ CONTROLLI FINALI OBBLIGATORI:
+
+□ Tutti i campi obbligatori sono compilati
+□ I valori sono coerenti con il fatturato dichiarato
+□ Non ci sono duplicazioni di ricavi/costi
+□ Le percentuali sono congrue con il settore
+□ Eventuali anomalie sono giustificate
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 OUTPUT FINALE ATTESO:
+
+Al termine della compilazione, fornirai:
+
+1. TABELLA RIEPILOGATIVA con tutti i campi compilati
+2. ANALISI DI COERENZA interna tra i vari campi
+3. SEGNALAZIONE CRITICITÀ o valori anomali
+4. SUGGERIMENTI per ottimizzare la compilazione
+5. CHECKLIST di controllo pre-invio
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 NOTE IMPORTANTI:
+- Questo prompt è valido per QUALSIASI modello ISA
+- Adatta le istruzioni specifiche al tuo settore
+- In caso di dubbi, fai riferimento al manuale ufficiale
+- Conserva sempre documentazione a supporto
+
+══════════════════════════════════════════════════════════════════════════
 """
     return prompt
 
 # UI Principale
-st.title("🇮🇹 IT ISA Prompt Generator")
-st.markdown("Carica il PDF delle istruzioni ISA per generare automaticamente un prompt specifico")
+st.title("🌍 ISA Universal Prompt Generator")
+st.markdown("Genera prompt universali per la compilazione del Quadro C di **QUALSIASI** modello ISA")
 
-uploaded_file = st.file_uploader("📄 Carica file PDF delle istruzioni ISA", type=['pdf'])
+# Input utente
+col1, col2 = st.columns(2)
 
-if uploaded_file is not None:
-    with st.spinner('🔍 Analisi del PDF in corso...'):
-        # Estrai testo
+with col1:
+    isa_code = st.text_input("🔢 Codice ISA", placeholder="es. FM87U, EG50U, DM28U...").upper()
+
+with col2:
+    fatturato = st.number_input("💰 Fatturato annuale (€)", min_value=0.0, step=1000.0, format="%.2f")
+
+uploaded_file = st.file_uploader("📄 Carica PDF istruzioni ISA", type=['pdf'])
+
+if isa_code and uploaded_file:
+    with st.spinner('🔍 Analisi del modello ISA in corso...'):
+        # Estrai testo dal PDF
         text_content = extract_text_from_pdf(uploaded_file)
         
         if text_content:
-            # Trova codice ISA
-            isa_code = find_isa_code(text_content)
+            # Analizza il PDF
+            with st.spinner('📋 Identificazione campi da compilare...'):
+                fields = identify_fields_to_compile(text_content, isa_code)
             
-            if isa_code:
-                st.success(f"✅ Codice ISA rilevato dal PDF: **{isa_code}**")
-                
-                # Estrai campi Quadro C
-                with st.spinner('📋 Estrazione campi Quadro C...'):
-                    fields = extract_quadro_c_fields(text_content)
-                
-                # Estrai keywords
-                with st.spinner('🎯 Identificazione settore...'):
-                    keywords = extract_keywords_from_text(text_content, isa_code)
-                
-                # Mostra info
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Campi Quadro C trovati", len(fields))
-                with col2:
-                    st.metric("Parole chiave identificate", len(keywords))
-                
-                # Espandi per vedere dettagli
-                with st.expander("🔍 Vedi dettagli estratti"):
-                    st.write("**Campi Quadro C:**")
-                    st.write(fields)
-                    st.write("**Parole chiave:**")
-                    st.write(keywords)
-                
-                # Genera prompt
-                with st.spinner('🤖 Generazione prompt...'):
-                    prompt = generate_universal_prompt(
-                        isa_code=isa_code,
-                        fields=fields,
-                        keywords=keywords
-                    )
-                
-                st.subheader(" Prompt Generato")
-                st.code(prompt, language='text')
-                
-                # Download
-                st.download_button(
-                    label="📥 Scarica Prompt (.txt)",
-                    data=prompt,
-                    file_name=f"prompt_{isa_code}.txt",
-                    mime="text/plain",
-                    type="primary"
+            with st.spinner('📖 Estrazione regole specifiche...'):
+                rules = extract_compilation_rules(text_content, isa_code)
+            
+            with st.spinner('🎯 Identificazione settore...'):
+                sector_info = extract_sector_info(text_content)
+            
+            # Mostra risultati analisi
+            st.success(f"✅ Analisi completata per ISA {isa_code}")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Campi identificati", len(fields))
+            with col2:
+                st.metric("Regole estratte", len(rules))
+            with col3:
+                st.metric("Parole chiave settore", len(sector_info))
+            
+            # Espandi per vedere dettagli
+            with st.expander("🔍 Vedi dettagli analisi"):
+                st.write("**Campi del Quadro C:**")
+                st.write(fields)
+                st.write("**Regole specifiche:**")
+                for rule in rules:
+                    st.write(f"• {rule}")
+                st.write("**Settore:**")
+                st.write(sector_info)
+            
+            # Genera prompt
+            with st.spinner('🤖 Generazione prompt universale...'):
+                prompt = generate_universal_compilation_prompt(
+                    isa_code=isa_code,
+                    fields=fields,
+                    rules=rules,
+                    sector_info=sector_info,
+                    fatturato=fatturato if fatturato > 0 else None
                 )
-            else:
-                st.error("❌ Nessun codice ISA trovato nel PDF")
-                st.info("Assicurati che il PDF contenga un codice ISA valido (es. FM87U, EG50U, DM28U, ecc.)")
+            
+            st.subheader("📝 Prompt Generato")
+            st.code(prompt, language='text')
+            
+            # Download
+            st.download_button(
+                label="📥 Scarica Prompt (.txt)",
+                data=prompt,
+                file_name=f"ISA_{isa_code}_Guida_Compilazione_QuadroC.txt",
+                mime="text/plain",
+                type="primary"
+            )
+            
+            st.info("💡 Questo prompt è universale e può essere usato per qualsiasi modello ISA!")
         else:
             st.error("❌ Errore nella lettura del PDF")
-else:
-    st.info("👆 Carica un PDF per iniziare")
+elif not isa_code:
+    st.warning("⚠️ Inserisci il codice ISA per continuare")
+elif not uploaded_file:
+    st.warning("⚠️ Carica il PDF delle istruzioni ISA")
+
+# Sidebar
+with st.sidebar:
+    st.header("Come funziona")
     st.markdown("""
-    **Come funziona:**
-    1. Carica il PDF delle istruzioni ISA
-    2. L'app rileva automaticamente il codice (es. DM28U)
-    3. Estrae i campi del Quadro C dal documento
-    4. Identifica il settore di attività
-    5. Genera un prompt specifico e pronto all'uso
+    1. **Inserisci** il codice ISA del modello
+    2. **Carica** il PDF delle istruzioni
+    3. **Opzionale:** Inserisci il fatturato
+    4. **Ottieni** un prompt universale per la compilazione
     """)
+    
+    st.markdown("---")
+    st.info("💡 Il prompt generato funziona per QUALSIASI modello ISA!")
