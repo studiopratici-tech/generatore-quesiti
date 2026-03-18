@@ -265,7 +265,7 @@ Per **CIASCUN CAMPO** del Quadro C, fornisci:
 │ FONTE DOCUMENTALE: [es. Bilancio 2024 pag. X]       │
 │ DESCRIZIONE: [breve descrizione]                    │
 │ NOTE: [eventuali criticità]                         │
-│ COERENZA: [✓ coerente / ⚠️ da verificare]          │
+│ COERENZA: [✓ coerente / ⚠️ da verificare]           │
 └─────────────────────────────────────────────────────┘
 
 **RIPETERE PER TUTTI I {len(data.get('quadro_c', []))} CAMPI**
