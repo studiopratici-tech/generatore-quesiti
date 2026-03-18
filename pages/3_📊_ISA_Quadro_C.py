@@ -220,8 +220,8 @@ if uploaded_file is not None:
                 
                 prompt = f"""
 ╔══════════════════════════════════════════════════════════════╗
-║         COMPILAZIONE QUADRO C - ISA {isa_code}                  ║
-║         {desc}
+║         COMPILAZIONE QUADRO C - ISA {isa_code}               ║
+║         {desc}                                               ║ 
 ╚══════════════════════════════════════════════════════════════╝
 
 📌 MODELLO ISA: {isa_code}
@@ -260,12 +260,12 @@ Questo prompt riguarda **ESCLUSIVAMENTE la compilazione del Quadro C**.
 Per **CIASCUN CAMPO** del Quadro C, fornisci:
 
 ┌─────────────────────────────────────────────────────┐
-│ CAMPO: C##                                           │
+│ CAMPO: C##                                          │
 │ VALORE: [inserire valore numerico]                  │
-│ FONTE DOCUMENTALE: [es. Bilancio 2024 pag. X]      │
+│ FONTE DOCUMENTALE: [es. Bilancio 2024 pag. X]       │
 │ DESCRIZIONE: [breve descrizione]                    │
 │ NOTE: [eventuali criticità]                         │
-│ COERENZA: [✓ coerente / ⚠️ da verificare]         │
+│ COERENZA: [✓ coerente / ⚠️ da verificare]          │
 └─────────────────────────────────────────────────────┘
 
 **RIPETERE PER TUTTI I {len(data.get('quadro_c', []))} CAMPI**
