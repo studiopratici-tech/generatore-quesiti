@@ -220,8 +220,8 @@ if uploaded_file is not None:
                 
                 prompt = f"""
 ╔══════════════════════════════════════════════════════════════╗
-║         COMPILAZIONE QUADRO C - ISA {isa_code}               ║
-║         {desc}                                               ║ 
+║         COMPILAZIONE QUADRO C - ISA {isa_code}                   ║
+║         {desc}                                      ║ 
 ╚══════════════════════════════════════════════════════════════╝
 
 📌 MODELLO ISA: {isa_code}
