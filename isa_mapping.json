@@ -96,4 +96,57 @@
     "note": "Specializzazione + area territoriale = 100%"
   },
   "EG99U": {
-    "descrizione": "Altri
+    "descrizione": "Altri servizi a imprese e famiglie",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09"],
+    "documenti_richiesti": ["Bilancio", "Contratti servizi"],
+    "note": "Percentuali tipologia attività = 100%"
+  },
+  "EK02U": {
+    "descrizione": "Studi di ingegneria",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39", "C40"],
+    "documenti_richiesti": ["Bilancio", "Incarichi professionali"],
+    "note": "Distinguere impresa vs lavoro autonomo"
+  },
+  "EK19U": {
+    "descrizione": "Attività professionali paramediche",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"],
+    "documenti_richiesti": ["Bilancio", "Prestazioni sanitarie"],
+    "note": "Distinguere impresa vs lavoro autonomo"
+  },
+  "EM01A": {
+    "descrizione": "Commercio al dettaglio alimentare",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39", "C40", "C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48", "C49"],
+    "documenti_richiesti": ["Bilancio", "Registro corrispettivi"],
+    "note": "Separare dati aggio da ricavi ordinari"
+  },
+  "EM05U": {
+    "descrizione": "Commercio abbigliamento",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37"],
+    "documenti_richiesti": ["Bilancio", "Registro vendite", "Distinta prodotti"],
+    "note": "Percentuali modalità vendita e prodotti = 100%"
+  },
+  "EM11U": {
+    "descrizione": "Commercio ferramenta, termoidraulica, materiali da costruzione",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32"],
+    "documenti_richiesti": ["Bilancio", "Registro vendite"],
+    "note": "Percentuali prodotti e tipologia vendita = 100%"
+  },
+  "EM43U": {
+    "descrizione": "Commercio macchine agricole e giardinaggio",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22"],
+    "documenti_richiesti": ["Bilancio", "Registro vendite"],
+    "note": "Percentuali tipologia vendita e offerta = 100%"
+  },
+  "EM85U": {
+    "descrizione": "Commercio prodotti tabacco",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12"],
+    "documenti_richiesti": ["Bilancio", "Dati aggio/ricavo fisso", "Registro vendite"],
+    "note": "Separare dati aggio da ricavi ordinari"
+  },
+  "FM87U": {
+    "descrizione": "Commercio al dettaglio altri prodotti",
+    "quadro_c": ["C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22"],
+    "documenti_richiesti": ["Bilancio", "Registro corrispettivi", "Distinta settori merceologici"],
+    "note": "Percentuali modalità vendita e settori merceologici = 100%"
+  }
+}
