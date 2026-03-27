@@ -3,13 +3,12 @@ import pdfplumber
 import re
 import tempfile
 import os
-from datetime import datetime
 from collections import defaultdict
 
 st.set_page_config(page_title="ISA - Compilazione Quadro C", layout="wide", page_icon="📊")
 
 # =============================================================================
-# REGOLE GENERALI (valide per TUTTI gli ISA) - NON dipendono dal PDF
+# REGOLE GENERALI (valide per TUTTI gli ISA)
 # =============================================================================
 GENERAL_RULES = """
 REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
@@ -20,38 +19,103 @@ REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
 
 2. REGIMI IVA SPECIALI:
    - Split Payment (Art.17-ter): cercare "Art.17-ter", "scissione pagamenti", committente = PA
-   - Reverse Charge (Art.17 c.6): cercare "Art.17 c.6", "N6.3", "subappalto edile", "lett. a-ter"
-   - Ritenute Art.25 D.L. 78/2010: cercare "ritenuta acconto", "bonifico parlante", "ristrutturazioni"
+   - Reverse Charge (Art.17 c.6): cercare "Art.17 c.6", "N6.3", "subappalto edile"
+   - Ritenute Art.25 D.L. 78/2010: cercare "ritenuta acconto", "bonifico parlante"
 
-3. LOCALIZZAZIONE:
-   - Cercare nel testo: "presso cantiere di [Comune]", "in [Località]", "sito in [Indirizzo]"
-   - Se assente: usare Comune del committente → SEGNALARE come ambiguo
-   - Area territoriale: C36=Comune domicilio, C37=resto provincia, C38=resto regione, C39=Italia, C40=UE, C41=Extra-UE
-
-4. NOTE DI CREDITO:
-   - Devono stornare la STESSA categoria/luogo della fattura originale
-   - Verificare coerenza temporale e descrittiva
-
-5. SAFETY FIRST:
+3. SAFETY FIRST:
    - Se una fattura presenta anche solo un dubbio ragionevole → NON forzare classificazione
    - Segnalare in "NOTE E CRITICITÀ" con priorità (alta/media/bassa)
    - Meglio una segnalazione in più che un errore in dichiarazione
 """
 
 # =============================================================================
-# PARSER DINAMICO: estrae regole dal PDF caricato
+# PARSER MODELLO: estrae CAMPI e DESCRIZIONI dalla tabella visiva
 # =============================================================================
-def parse_isa_instructions(pdf_path):
+def parse_modello(pdf_path):
     """
-    Estrae struttura Quadro C dalle istruzioni ISA PDF.
-    Restituisce dict con: campi, vincoli, descrizioni, parole_chiave, ambiguità.
+    Estrae i campi Quadro C (C01, C02...) e le loro descrizioni dal MODELLO PDF.
+    Legge le tabelle visive dove sono elencate le tipologie di attività.
     """
     result = {
         "isa_code": None,
-        "descrizione": None,
         "campi": defaultdict(dict),
-        "vincoli": [],
-        "ambiguita_comuni": []
+        "vincoli_modello": []
+    }
+    
+    text_content = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            # Estrai testo
+            extracted = page.extract_text()
+            if extracted:
+                text_content += extracted + "\n"
+            
+            # ✅ CRUCIALE: estrai anche le tabelle (dove sono le descrizioni campi)
+            tables = page.extract_tables()
+            for table in tables:
+                if table:
+                    for row in table:
+                        if row:
+                            # Unisci celle non nulle
+                            row_text = " | ".join(str(cell).strip() for cell in row if cell and str(cell).strip())
+                            if row_text:
+                                text_content += row_text + "\n"
+    
+    # 1. Estrai codice ISA dal nome file o dal contenuto
+    pattern = r'\b([A-Z]{2}\d{2,3}[A-Z]?)\b'
+    matches = re.findall(pattern, text_content)
+    for match in matches:
+        if match not in ['DPR', 'TUIR', 'IVA', 'CIG', 'PA', 'UE', 'DDT', 'SAT']:
+            result["isa_code"] = match
+            break
+    
+    # 2. Estrai campi C01, C02, C03... con descrizioni
+    # Pattern: cerca "C01", "C02" seguiti da descrizione
+    # Esempio dal DG76U: "C01 C02 C03... Gestione di mense..."
+    # Esempio dall'EG75U: "C01 Impianti elettrici civili e industriali"
+    
+    field_patterns = [
+        r'C(\d{2})\s*[:\-]?\s*([^\n|%]+?)(?=\n\s*C\d{2}|\n\s*TOT|\n\s*%|\Z)',  # C01: Descrizione
+        r'C(\d{2})\s+([^\n|%]+?)(?=\n\s*C\d{2}|\n\s*TOT|\n\s*%|\Z)',  # C01 Descrizione (senza :)
+    ]
+    
+    for pattern in field_patterns:
+        for match in re.finditer(pattern, text_content):
+            field_num = match.group(1)
+            description = match.group(2).strip()
+            # Pulisci descrizione
+            description = re.sub(r'\s+', ' ', description)
+            description = re.sub(r'\|', '', description)
+            if len(description) > 5 and len(description) < 300:  # Evita match spuri
+                field_code = f"C{field_num}"
+                result["campi"][field_code]["descrizione"] = description
+    
+    # 3. Estrai vincoli dal modello (es. "TOT= 100%")
+    if "TOT" in text_content and "100" in text_content:
+        # Trova quali campi devono sommare 100%
+        if "C01" in text_content and "C09" in text_content and "DG76U" in text_content:
+            result["vincoli_modello"].append("C01+C02+C03+C04+C05+C06+C07+C08+C09 = 100%")
+        if "C01" in text_content and "C25" in text_content and "EG75U" in text_content:
+            result["vincoli_modello"].append("C01+C02+...+C25 = 100% (Specializzazione)")
+        if "C26" in text_content and "C29" in text_content and "EG75U" in text_content:
+            result["vincoli_modello"].append("C26+C27+C28+C29 = 100% (Tipologia servizio)")
+        if "C42" in text_content and "C43" in text_content and "EG75U" in text_content:
+            result["vincoli_modello"].append("C42+C43 = 100% (Ambito attività)")
+    
+    return result
+
+
+# =============================================================================
+# PARSER ISTRUZIONI: estrae REGOLE e VINCOLI di compilazione
+# =============================================================================
+def parse_istruzioni(pdf_path):
+    """
+    Estrae le regole di compilazione, vincoli e note dalle ISTRUZIONI PDF.
+    """
+    result = {
+        "vincoli_istruzioni": [],
+        "ambiguita_comuni": [],
+        "note_compilazione": []
     }
     
     text_content = ""
@@ -61,73 +125,17 @@ def parse_isa_instructions(pdf_path):
             if extracted:
                 text_content += extracted + "\n"
     
-    # 1. Estrai codice ISA
-    pattern = r'\b([A-Z]{2}\d{2,3}[A-Z]?)\b'
-    matches = re.findall(pattern, text_content)
-    for match in matches:
-        if match not in ['DPR', 'TUIR', 'IVA', 'CIG', 'PA', 'UE']:
-            result["isa_code"] = match
-            break
+    # 1. Estrai vincoli espliciti ("Il totale... deve risultare pari a 100")
+    constraint_patterns = [
+        r'Il totale.*?percentuali.*?(C\d+).*?(C\d+).*?100',
+        r'totale.*?pari a 100',
+        r'deve risultare pari a 100',
+    ]
+    for pattern in constraint_patterns:
+        for match in re.finditer(pattern, text_content, re.IGNORECASE):
+            result["vincoli_istruzioni"].append(f"Somma percentuali = 100%")
     
-    # 2. Estrai descrizione attività (dopo il codice ISA)
-    if result["isa_code"]:
-        desc_pattern = rf'{result["isa_code"]}\s*\n?\s*([^\n•\n]+?)(?=\n\n|Il modello|PERIODO)'
-        desc_match = re.search(desc_pattern, text_content, re.IGNORECASE)
-        if desc_match:
-            result["descrizione"] = desc_match.group(1).strip()
-    
-    # 3. Estrai sezioni Quadro C e campi
-    # Cerca pattern: "nei righi da CXX a CYY" o "nel rigo CXX"
-    section_pattern = r'(?:nei righi da|nel rigo)\s+(C\d+)(?:\s*a\s+(C\d+))?.*?(?=\n\n|–\s*nel|\Z)'
-    
-    for match in re.finditer(section_pattern, text_content, re.DOTALL):
-        start_field = match.group(1)
-        end_field = match.group(2)
-        
-        # Estrai descrizione della sezione
-        section_text = match.group(0)
-        
-        # Estrai vincolo "somma 100%"
-        if "100" in section_text and ("somma" in section_text.lower() or "totale" in section_text.lower() or "pari" in section_text):
-            if end_field:
-                result["vincoli"].append(f"{start_field}+...+{end_field} = 100%")
-            else:
-                result["vincoli"].append(f"{start_field} = 100% (se unico)")
-        
-        # Popola i campi
-        if end_field:
-            start_num = int(re.search(r'\d+', start_field).group())
-            end_num = int(re.search(r'\d+', end_field).group())
-            for i in range(start_num, end_num + 1):
-                field_code = f"C{i:02d}"
-                result["campi"][field_code]["section"] = f"{start_field}-{end_field}"
-        else:
-            result["campi"][start_field]["section"] = start_field
-    
-    # 4. Estrai descrizioni specifiche per campo (pattern: "– nel rigo CXX, ...")
-    field_desc_pattern = r'–\s*nel rigo\s+(C\d+),?\s*(.+?)(?=\n\s*–\s*nel rigo|\n\s*Il totale|\n\s*Qualora|\Z)'
-    
-    for match in re.finditer(field_desc_pattern, text_content, re.DOTALL):
-        field_code = match.group(1)
-        description = match.group(2).strip()
-        # Pulisci descrizione da riferimenti normativi lunghi
-        description = re.sub(r'\(.*?D\.?P\.?R\.?.*?\)', '', description).strip()
-        description = re.sub(r'\(.*?art\.?.*?\)', '', description).strip()
-        
-        result["campi"][field_code]["descrizione"] = description
-        
-        # Estrai parole chiave dalla descrizione per classificazione
-        keywords = re.findall(r'"([^"]+)"', description)
-        if keywords:
-            result["campi"][field_code]["parole_chiave"] = keywords
-    
-    # 5. Estrai vincoli espliciti ("Il totale... deve risultare pari a 100")
-    constraint_pattern = r'Il totale delle percentuali.*?(C\d+).*?(C\d+).*?100'
-    for match in re.finditer(constraint_pattern, text_content):
-        c1, c2 = match.group(1), match.group(2)
-        result["vincoli"].append(f"{c1}+{c2} = 100%")
-    
-    # 6. Estrai note su ambiguità frequenti (sezioni con "Ad esempio", "Si precisa", ecc.)
+    # 2. Estrai note su ambiguità (sezioni con "Ad esempio", "Si precisa", "Nell'ambito")
     ambiguity_patterns = [
         r'(?:Ad esempio|Si precisa|Nell\'ambito).*?(riqualificazione|manutenzione|ristrutturazione|nuova costruzione).*?(?=\n\n|\.)',
         r'(?:attenzione|verificare|non confondere).*?(subappalto|reverse charge|split payment)',
@@ -135,19 +143,18 @@ def parse_isa_instructions(pdf_path):
     for pattern in ambiguity_patterns:
         for match in re.finditer(pattern, text_content, re.IGNORECASE):
             note = match.group(0).strip()
-            if len(note) < 200:  # Evita blocchi troppo lunghi
+            if len(note) < 250:
                 result["ambiguita_comuni"].append(note)
     
-    # 7. Aggiungi ambiguità specifiche per EG75U (manutenzione ordinaria/straordinaria)
-    if result["isa_code"] == "EG75U":
+    # 3. Aggiungi ambiguità specifiche basate sul codice ISA (se rilevato)
+    if "EG75U" in text_content:
         result["ambiguita_comuni"].extend([
-            "Distinguere manutenzione ordinaria (C27) da straordinaria/riqualificazione (C43) - verificare se intervento modifica caratteristiche prestazionali o solo ripristino",
+            "⚠️ CRITICO: Distinguere manutenzione (C27) da riqualificazione/recupero (C43) - C27 = ripristino funzionalità esistente, C43 = miglioramento prestazionale (art.3 DPR 380/2001)",
             "Localizzazione: se fattura non indica cantiere, usare Comune committente ma segnalare ambiguità",
-            "Subappalto (C30) vs lavori affidati a terzi: verificare se l'impresa è esecutrice diretta o coordinatrice"
+            "Subappalto (C30): solo se lavori acquisiti da altra impresa, NON confondere con lavori affidati a terzi"
         ])
     
-    # 8. Aggiungi ambiguità per DG76U (catering vs mense)
-    if result["isa_code"] == "DG76U":
+    if "DG76U" in text_content:
         result["ambiguita_comuni"].extend([
             "Distinguere catering continuativo (C02) da banqueting non continuativo (C03) - verificare contratto: durata, luogo, tipologia evento",
             "Mense (C01): solo se preparazione e consumo nello stesso luogo; se veicolato → catering"
@@ -159,53 +166,46 @@ def parse_isa_instructions(pdf_path):
 # =============================================================================
 # GENERATORE PROMPT DINAMICO
 # =============================================================================
-def generate_dynamic_prompt(isa_data, general_rules=GENERAL_RULES):
+def generate_dynamic_prompt(modello_data, istruzioni_data, general_rules=GENERAL_RULES):
     """
     Costruisce prompt con:
     - Regole generali (sempre valide)
-    - Regole specifiche estratte dal PDF
-    - Istruzioni di safety
+    - Campi estratti dal MODELLO (descrizioni)
+    - Vincoli estratti da MODELLO + ISTRUZIONI
+    - Ambiguità dalle ISTRUZIONI
     """
-    isa_code = isa_data.get("isa_code", "UNKNOWN")
-    descrizione = isa_data.get("descrizione", "Attività non specificata")
+    isa_code = modello_data.get("isa_code") or istruzioni_data.get("isa_code", "UNKNOWN")
     
     prompt = f"""
 🎯 RUOLO E OBIETTIVO
-Ruolo: Agisci come un Consulente Fiscale Senior specializzato in ISA (Indici Sintetici di Affidabilità Fiscale), con competenza specifica sul codice attività {isa_code}: "{descrizione}".
-Obiettivo: Compilare con precisione assoluta il Quadro C – Elementi specifici dell'attività del modello {isa_code} per il periodo d'imposta 2025, estraendo i dati esclusivamente dalla documentazione fornita e applicando rigorosamente le regole estratte dalle istruzioni ufficiali caricate.
+Ruolo: Agisci come un Consulente Fiscale Senior specializzato in ISA (Indici Sintetici di Affidabilità Fiscale), con competenza specifica sul codice attività {isa_code}.
+Obiettivo: Compilare con precisione assoluta il Quadro C – Elementi specifici dell'attività del modello {isa_code} per il periodo d'imposta 2025, estraendo i dati esclusivamente dalla documentazione fornita e applicando rigorosamente le regole estratte dai file caricati.
 
 {general_rules}
 
-📋 REGOLE SPECIFICHE ESTRATTE DAL MODELLO {isa_code}
+📋 CAMPI QUADRO C (estratti dal MODELLO {isa_code})
 """
     
-    # Aggiungi campi estratti dal PDF
-    if isa_data["campi"]:
-        prompt += "\nCAMPI QUADRO C DA COMPILARE:\n"
-        for campo, info in isa_data["campi"].items():
-            desc = info.get("descrizione", "Descrizione non estratta - verificare istruzioni")
-            section = info.get("section", "")
-            keywords = info.get("parole_chiave", [])
-            
-            prompt += f"\n{campo}"
-            if section and section != campo:
-                prompt += f" [{section}]"
-            prompt += f": {desc}"
-            if keywords:
-                prompt += f"\n  → Parole chiave per classificazione: {', '.join(keywords)}"
+    # Aggiungi campi estratti dal MODELLO
+    if modello_data["campi"]:
+        prompt += "\n| Campo | Descrizione |\n|-------|-------------|\n"
+        for campo in sorted(modello_data["campi"].keys()):
+            desc = modello_data["campi"][campo].get("descrizione", "Descrizione non estratta - verificare modello")
+            prompt += f"| {campo} | {desc} |\n"
+    else:
+        prompt += "\n⚠️ Nessun campo estratto dal Modello. Verificare che il PDF contenga la tabella Quadro C.\n"
     
-    # Aggiungi vincoli estratti
-    if isa_data["vincoli"]:
-        prompt += "\n\n⚠️ VINCOLI OBBLIGATORI (estratti dalle istruzioni):\n"
-        for vincolo in isa_data["vincoli"]:
+    # Aggiungi vincoli (MODELLO + ISTRUZIONI)
+    all_vincoli = modello_data.get("vincoli_modello", []) + istruzioni_data.get("vincoli_istruzioni", [])
+    if all_vincoli:
+        prompt += "\n⚠️ VINCOLI OBBLIGATORI (estratti da Modello + Istruzioni):\n"
+        for vincolo in all_vincoli:
             prompt += f"- {vincolo}\n"
     
-    # Aggiungi sezione ambiguità
-    if isa_data["ambiguita_comuni"]:
-        prompt += """
-🔍 AMBIGUITÀ FREQUENTI PER QUESTO ISA (estratte + esperienza):
-"""
-        for amb in isa_data["ambiguita_comuni"]:
+    # Aggiungi ambiguità dalle ISTRUZIONI
+    if istruzioni_data.get("ambiguita_comuni"):
+        prompt += "\n🔍 AMBIGUITÀ FREQUENTI (estratte dalle Istruzioni):\n"
+        for amb in istruzioni_data["ambiguita_comuni"]:
             prompt += f"- {amb}\n"
     
     # Template per segnalazione criticità
@@ -228,110 +228,105 @@ Raccomandazione: [verificare con cliente / chiedere documentazione / assumere co
    - [ ] Tutti i vincoli di somma % rispettati (tolleranza 0,1%)
    - [ ] Note di credito applicate come storni (non nuovi ricavi)
    - [ ] Regimi IVA (split/reverse) coerenti con fatture
-   - [ ] Localizzazioni allocate correttamente (C36-C40)
    - [ ] Ambiguità segnalate, non nascoste
 
 💡 ISTRUZIONE FINALE DI SAFETY:
-Se una fattura presenta anche solo un dubbio ragionevole su:
-- classificazione attività (es. ordinaria vs straordinaria)
-- localizzazione esecuzione
-- regime IVA applicabile
-- ambito (nuova costruzione vs recupero)
-→ NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
+Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
 """
     
     return prompt
 
 
 # =============================================================================
-# INTERFACCIA STREAMLIT (mantenuta, con upgrade)
+# INTERFACCIA STREAMLIT
 # =============================================================================
 st.title("📊 ISA - Compilazione Quadro C")
-st.markdown("Carica le **Istruzioni ISA** e il **Modello Quadro C** per generare un prompt contestuale e preciso")
+st.markdown("Carica **separatamente** il MODELLO e le ISTRUZIONI per estrarre campi e regole correttamente")
 
-# Upload multiplo: istruzioni + modello
-uploaded_files = st.file_uploader(
-    "📄 Carica PDF: Istruzioni ISA + Modello Quadro C", 
-    type=['pdf'],
-    accept_multiple_files=True
-)
+col1, col2 = st.columns(2)
 
-if uploaded_files:
+with col1:
+    uploaded_modello = st.file_uploader(
+        "📄 1. Carica MODELLO Quadro C (PDF)", 
+        type=['pdf'],
+        help="Il file con la tabella visiva dei campi (es. EG75U Modello.pdf)"
+    )
+
+with col2:
+    uploaded_istruzioni = st.file_uploader(
+        "📄 2. Carica ISTRUZIONI ISA (PDF)", 
+        type=['pdf'],
+        help="Il file con le regole di compilazione (es. EG75U Istruzioni.pdf)"
+    )
+
+if uploaded_modello or uploaded_istruzioni:
     with st.spinner('🔍 Analisi PDF in corso...'):
         try:
-            # Processa ogni file caricato
-            parsed_data = None
-            for uploaded_file in uploaded_files:
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                    tmp_file.write(uploaded_file.getvalue())
-                    tmp_path = tmp_file.name
-                
-                # Prova a parsare
-                temp_result = parse_isa_instructions(tmp_path)
-                
-                # Se troviamo un codice ISA valido, usiamo questo parsing
-                if temp_result["isa_code"] and not parsed_data:
-                    parsed_data = temp_result
-                elif parsed_data and temp_result["isa_code"]:
-                    # Merge se entrambi hanno dati utili
-                    for k in ["campi", "vincoli", "ambiguita_comuni"]:
-                        if isinstance(parsed_data.get(k), dict) and isinstance(temp_result.get(k), dict):
-                            parsed_data[k].update(temp_result[k])
-                        elif isinstance(parsed_data.get(k), list) and isinstance(temp_result.get(k), list):
-                            parsed_data[k].extend(temp_result[k])
-                
-                os.unlink(tmp_path)
+            modello_data = {"isa_code": None, "campi": {}, "vincoli_modello": []}
+            istruzioni_data = {"vincoli_istruzioni": [], "ambiguita_comuni": []}
             
-            if parsed_data and parsed_data["isa_code"]:
-                st.success(f"✅ Codice ISA rilevato: **{parsed_data['isa_code']}**")
+            # Processa MODELLO
+            if uploaded_modello:
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                    tmp_file.write(uploaded_modello.getvalue())
+                    tmp_path = tmp_file.name
+                modello_data = parse_modello(tmp_path)
+                os.unlink(tmp_path)
+                st.success(f"✅ Modello elaborato: {len(modello_data['campi'])} campi estratti")
+            
+            # Processa ISTRUZIONI
+            if uploaded_istruzioni:
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                    tmp_file.write(uploaded_istruzioni.getvalue())
+                    tmp_path = tmp_file.name
+                istruzioni_data = parse_istruzioni(tmp_path)
+                os.unlink(tmp_path)
+                st.success(f"✅ Istruzioni elaborate: {len(istruzioni_data.get('ambiguita_comuni', []))} note estratte")
+            
+            # Verifica codice ISA
+            isa_code = modello_data.get("isa_code") or "UNKNOWN"
+            
+            if isa_code != "UNKNOWN":
+                st.info(f"🎯 Codice ISA rilevato: **{isa_code}**")
+            
+            # Anteprima dati estratti
+            with st.expander("🔍 Anteprima dati estratti"):
+                st.write("**Campi dal Modello:**")
+                for campo, info in list(modello_data["campi"].items())[:15]:
+                    st.write(f"- {campo}: {info.get('descrizione', 'N/A')[:100]}...")
                 
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Settore", parsed_data.get('descrizione', 'N/A')[:50] + "..." if len(str(parsed_data.get('descrizione', ''))) > 50 else parsed_data.get('descrizione', 'N/A'))
-                with col2:
-                    st.metric("Campi estratti", len(parsed_data["campi"]))
-                with col3:
-                    st.metric("Vincoli trovati", len(parsed_data["vincoli"]))
+                if modello_data.get("vincoli_modello"):
+                    st.write("\n**Vincoli dal Modello:**")
+                    for v in modello_data["vincoli_modello"]:
+                        st.write(f"- {v}")
                 
-                # Anteprima regole estratte (debug/trasparenza)
-                with st.expander("🔍 Anteprima regole estratte dal PDF"):
-                    st.write("**Campi Quadro C identificati:**")
-                    for campo, info in list(parsed_data["campi"].items())[:10]:
-                        st.write(f"- {campo}: {info.get('descrizione', 'N/A')[:100]}...")
-                    
-                    if parsed_data["vincoli"]:
-                        st.write("\n**Vincoli:**")
-                        for v in parsed_data["vincoli"]:
-                            st.write(f"- {v}")
-                
-                # Genera prompt dinamico
-                prompt = generate_dynamic_prompt(parsed_data)
-                
-                st.subheader("🤖 Prompt Generato (dinamico da PDF)")
-                st.code(prompt, language='text')
-                
-                st.download_button(
-                    label="📥 Scarica Prompt (.txt)",
-                    data=prompt,
-                    file_name=f"prompt_{parsed_data['isa_code']}_quadro_c_dynamic.txt",
-                    mime="text/plain",
-                    type="primary"
-                )
-                
-            else:
-                st.warning("⚠️ Nessun codice ISA riconosciuto nei PDF caricati")
-                # Mostra anteprima testo per debug
-                with st.expander("🔧 Debug: anteprima testo estratto"):
-                    st.text("Carica file con nome contenente codice ISA (es. EG75U) e verifica che le istruzioni contengano 'Quadro C'")
-                
+                if istruzioni_data.get("ambiguita_comuni"):
+                    st.write("\n**Ambiguità dalle Istruzioni:**")
+                    for a in istruzioni_data["ambiguita_comuni"]:
+                        st.write(f"- {a}")
+            
+            # Genera prompt
+            prompt = generate_dynamic_prompt(modello_data, istruzioni_data)
+            
+            st.subheader("🤖 Prompt Generato")
+            st.code(prompt, language='text')
+            
+            st.download_button(
+                label="📥 Scarica Prompt (.txt)",
+                data=prompt,
+                file_name=f"prompt_{isa_code}_quadro_c.txt",
+                mime="text/plain",
+                type="primary"
+            )
+            
         except Exception as e:
             st.error(f"❌ Errore durante l'analisi: {str(e)}")
             st.exception(e)
 else:
-    st.info("👆 Carica almeno un PDF (Istruzioni ISA e/o Modello Quadro C) per iniziare")
+    st.info("👆 Carica almeno il MODELLO per iniziare (le ISTRUZIONI sono opzionali ma consigliate)")
     st.markdown("""
-    💡 **Suggerimenti per upload ottimale**:
-    - Carica sia `EG75U Istruzioni.pdf` che `EG75U Modello.pdf` per estrazione completa
-    - Il nome del file dovrebbe contenere il codice ISA (es. `EG75U`, `DG76U`)
-    - Le istruzioni devono contenere la sezione "Quadro C – Elementi specifici dell'attività"
+    💡 **Flusso ottimale**:
+    1. Carica `EG75U Modello.pdf` → estrae campi C01-C43 con descrizioni
+    2. Carica `EG75U Istruzioni.pdf` → estrae vincoli e regole di compilazione
+    3. Il prompt combina entrambi per massima precisione
     """)
