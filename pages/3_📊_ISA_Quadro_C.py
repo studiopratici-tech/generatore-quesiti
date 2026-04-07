@@ -29,128 +29,116 @@ REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
 """
 
 # =============================================================================
-# PARSER MODELLO: VERSIONE "GRIGLIA INTELIGENTE" (Vertical Lanes)
-# Risolve il problema delle descrizioni disallineate (C06-C43)
+# PARSER MODELLO UNIVERSALE (Zero Hardcode, Legge Griglie ISA)
 # =============================================================================
 def parse_modello(pdf_path):
     import pdfplumber
     import re
-    import logging
     from collections import defaultdict
-    
+
     result = {
         "isa_code": None,
         "campi": defaultdict(dict),
         "vincoli_modello": []
     }
-    
-    # Lista per tracciare i codici e le loro coordinate
-    detected_codes = []
-    
+
     with pdfplumber.open(pdf_path) as pdf:
+        # 1. Raccogli tutte le parole con coordinate da TUTTE le pagine
+        all_words = []
         for page in pdf.pages:
-            # 🎯 Estrai parole CON coordinate precise
             words = page.extract_words(
-                x_tolerance=3,
-                y_tolerance=3,
-                extra_attrs=["top", "bottom", "x0", "x1"]
+                x_tolerance=3, 
+                y_tolerance=3, 
+                extra_attrs=["top", "bottom", "x0", "x1", "page_number"]
             )
-            if not words:
-                continue
+            if words:
+                all_words.extend(words)
             
-            # 1. Identifica tutti i Codici C## e calcola il loro centro X
-            for word in words:
-                text = word["text"].strip()
-                match = re.match(r'^(C\d{2})$', text)
-                if match:
-                    code = match.group(1)
-                    x_center = (word["x0"] + word["x1"]) / 2
-                    
-                    # Verifica se è già stato trovato (per evitare duplicati)
-                    if not any(c["code"] == code for c in detected_codes):
-                        detected_codes.append({
-                            "code": code,
-                            "x_center": x_center,
-                            "desc_parts": [],
-                            "y_pos": word["top"] # Per sapere da dove iniziare a cercare la descrizione
-                        })
-            
-            # Rileva codice ISA (es. EG75U)
+            # Rileva codice modello (es. EG75U)
             if not result["isa_code"]:
                 page_text = page.extract_text() or ""
                 match = re.search(r'Modello\s+([A-Z]{2}\d{2,3}[A-Z]?)', page_text, re.I)
                 if match:
                     result["isa_code"] = match.group(1).upper()
 
-    # 2. Fase di Matching: Associa ogni parola alla colonna (Codice) più vicina
-    # Riapriamo il file per scansionare le descrizioni e assegnarle alle corsie
-    with pdfplumber.open(pdf_path) as pdf:
-        for page in pdf.pages:
-            words = page.extract_words(
-                x_tolerance=3,
-                y_tolerance=3,
-                extra_attrs=["top", "bottom", "x0", "x1"]
-            )
-            if not words: continue
+        if not all_words:
+            return result
 
-            for word in words:
-                text = word["text"].strip()
-                if not text: continue
+        # 2. Identifica tutti i codici C## e il loro centro X
+        code_columns = []
+        for w in all_words:
+            txt = w["text"].strip()
+            if re.match(r'^C\d{2}$', txt):
+                x_center = (w["x0"] + w["x1"]) / 2
+                # Evita duplicati (tieni solo la prima occorrenza per codice)
+                if not any(c["code"] == txt for c in code_columns):
+                    code_columns.append({
+                        "code": txt,
+                        "x_center": x_center,
+                        "y_start": w["top"],
+                        "desc_words": []
+                    })
+
+        # 3. Assegna ogni parola alla colonna (codice) più vicina orizzontalmente
+        #    e verticalmente sotto di esso, ignorando header e numeri puri
+        for w in all_words:
+            txt = w["text"].strip()
+            if not txt:
+                continue
                 
-                # Ignoriamo i codici stessi e i numeri puri
-                if re.match(r'^(C\d{2}|TOT|%=?|,00|\d+[,.]?\d*)$', text):
-                    continue
+            # Ignora codici stessi, percentuali, valori numerici, separatori
+            if re.match(r'^(C\d{2}|TOT|%=?|,00|\d+[,.]?\d*|[|\-]+)$', txt):
+                continue
                 
-                # Ignoriamo le intestazioni di sezione (es. "Sezione 1", "Quadro A")
-                if len(text) < 15 and ("Sezione" in text or "Quadro" in text):
-                    continue
+            # Ignora parole che sono chiaramente titoli di sezione/header
+            if len(txt) < 20 and any(kw in txt.upper() for kw in [
+                "SEZIONE", "QUADRO", "PERCENTUALE", "RICAVI", "MODALITÀ", 
+                "TIPOLOGIA", "AREA", "AMBITO", "PRODUZIONE", "ALTRI ELEMENTI"
+            ]):
+                continue
 
-                word_x = (word["x0"] + word["x1"]) / 2
-                word_y = word["top"]
-
-                # Trova il codice la cui colonna X è più vicina a questa parola
-                closest_code = None
-                min_dist = float('inf')
-                
-                for entry in detected_codes:
-                    dist = abs(entry["x_center"] - word_x)
-                    # Tolleranza di larghezza colonna (es. 50 pixel)
-                    # E deve essere sotto il codice (o leggermente sopra se è un titolo)
-                    # Ma qui assumiamo che la descrizione sia nella stessa fascia verticale
-                    if dist < min_dist:
-                        min_dist = dist
-                        closest_code = entry
-                
-                # Se siamo abbastanza vicini alla colonna del codice, aggiungiamo la parola
-                if closest_code and min_dist < 60: # 60px è la tolleranza orizzontale
-                    # Evitiamo di catturare parole troppo lontane verticalmente se sono header
-                    # Qui catturiamo tutto ciò che cade nella colonna
-                    closest_code["desc_parts"].append(text)
-
-    # 3. Costruzione finale
-    for entry in detected_codes:
-        code = entry["code"]
-        # Unisce le parole trovate nella colonna
-        raw_desc = " ".join(entry["desc_parts"]).strip()
-        
-        # Pulizia: rimuove ripetizioni e caratteri spuri
-        clean_desc = re.sub(r'\s+', ' ', raw_desc)
-        clean_desc = re.sub(r'[\|]', ' ', clean_desc)
-        clean_desc = clean_desc.strip(".,;:")
-        
-        # Filtra descrizioni troppo corte (probabili errori)
-        if len(clean_desc) > 5:
-            result["campi"][code]["descrizione"] = clean_desc
-            result["campi"][code]["estratto_da_pdf"] = True
-
-    # 4. Sicurezza: Riempiamo i buchi (C01-C43) anche se non trovati
-    for i in range(1, 44):
-        code = f"C{i:02d}"
-        if code not in result["campi"]:
-            result["campi"][code]["descrizione"] = f"Campo {code} - verificare descrizione ufficiale"
-            result["campi"][code]["estratto_da_pdf"] = False
+            w_x = (w["x0"] + w["x1"]) / 2
+            w_y = w["top"]
             
+            # Trova la colonna più vicina in X (tolleranza 50px)
+            closest_col = None
+            min_x_dist = float('inf')
+            for col in code_columns:
+                x_dist = abs(col["x_center"] - w_x)
+                if x_dist < min_x_dist:
+                    min_x_dist = x_dist
+                    closest_col = col
+            
+            # Assegna solo se siamo nella stessa colonna E sotto il codice
+            if closest_col and min_x_dist < 50 and w_y >= closest_col["y_start"] - 5:
+                closest_col["desc_words"].append(txt)
+
+        # 4. Costruisci le descrizioni finali
+        for col in code_columns:
+            # Filtra rumore residuo e unisci
+            clean_words = [w for w in col["desc_words"] if not re.match(r'^[%\d,.\-()]+$', w)]
+            description = " ".join(clean_words).strip()
+            description = re.sub(r'\s+', ' ', description)  # Normalizza spazi multipli
+            description = description.strip(".,;:")
+
+            # Salva solo se la descrizione ha senso (>5 caratteri)
+            if len(description) > 5:
+                result["campi"][col["code"]]["descrizione"] = description
+                result["campi"][col["code"]]["estratto_da_pdf"] = True
+            else:
+                # Fallback dinamico (mai hardcoded)
+                result["campi"][col["code"]]["descrizione"] = f"Campo {col['code']} - descrizione non rilevata nel layout"
+                result["campi"][col["code"]]["estratto_da_pdf"] = False
+
+        # 5. Rileva automaticamente vincoli di somma (es. "TOT=100%")
+        full_text = " ".join(w["text"] for w in all_words)
+        if "TOT" in full_text and "100" in full_text:
+            result["vincoli_modello"].append("Presenza vincolo di somma (TOT=100%) rilevato. Verificare raggruppamenti logici.")
+
+    # Ordina alfabeticamente/numericamente per output pulito
+    result["campi"] = dict(sorted(result["campi"].items()))
     return result
+
 # =============================================================================
 # PARSER ISTRUZIONI: estrae REGOLE e VINCOLI di compilazione
 # =============================================================================
