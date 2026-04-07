@@ -8,32 +8,12 @@ from collections import defaultdict
 st.set_page_config(page_title="ISA - Compilazione Quadro C PRO", layout="wide", page_icon="📊")
 
 # =============================================================================
-# REGOLE GENERALI (valide per TUTTI gli ISA)
-# =============================================================================
-GENERAL_RULES = """
-REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
-1. REVENUE RECOGNITION:
-   - TD01 (Fattura): importo imponibile → positivo (+)
-   - TD04 (Nota di credito): importo imponibile → negativo (–) come storno
-   - Mai usare "Totale documento" (include IVA), sempre "Totale imponibile"
-
-2. REGIMI IVA SPECIALI:
-   - Split Payment (Art.17-ter): cercare "Art.17-ter", "scissione pagamenti", committente = PA
-   - Reverse Charge (Art.17 c.6): cercare "Art.17 c.6", "N6.3", "subappalto edile"
-   - Ritenute Art.25 D.L. 78/2010: cercare "ritenuta acconto", "bonifico parlante"
-
-3. SAFETY FIRST:
-   - Se una fattura presenta anche solo un dubbio ragionevole → NON forzare classificazione
-   - Segnalare in "NOTE E CRITICITÀ" con priorità (alta/media/bassa)
-   - Meglio una segnalazione in più che un errore in dichiarazione
-"""
-
-# =============================================================================
-# PARSER MODELLO UNIVERSALE (Zero Hardcode, Legge Griglie ISA)
+# PARSER MODELLO UNIVERSALE (Logica Geometrica / Nearest Neighbor)
 # =============================================================================
 def parse_modello(pdf_path):
     import pdfplumber
     import re
+    import math
     from collections import defaultdict
 
     result = {
@@ -42,103 +22,144 @@ def parse_modello(pdf_path):
         "vincoli_modello": []
     }
 
+    # Strutture temporanee
+    codes_found = []
+    text_blocks = []
+
     with pdfplumber.open(pdf_path) as pdf:
-        # 1. Raccogli tutte le parole con coordinate da TUTTE le pagine
-        all_words = []
         for page in pdf.pages:
+            # 1. Estrai parole con coordinate precise
             words = page.extract_words(
-                x_tolerance=3, 
-                y_tolerance=3, 
-                extra_attrs=["top", "bottom", "x0", "x1", "page_number"]
+                x_tolerance=2, 
+                y_tolerance=2, 
+                extra_attrs=["top", "bottom", "x0", "x1"]
             )
-            if words:
-                all_words.extend(words)
-            
-            # Rileva codice modello (es. EG75U)
+            if not words: continue
+
+            # Rileva Codice ISA (es. EG75U)
             if not result["isa_code"]:
                 page_text = page.extract_text() or ""
                 match = re.search(r'Modello\s+([A-Z]{2}\d{2,3}[A-Z]?)', page_text, re.I)
                 if match:
                     result["isa_code"] = match.group(1).upper()
 
-        if not all_words:
-            return result
-
-        # 2. Identifica tutti i codici C## e il loro centro X
-        code_columns = []
-        for w in all_words:
-            txt = w["text"].strip()
-            if re.match(r'^C\d{2}$', txt):
-                x_center = (w["x0"] + w["x1"]) / 2
-                # Evita duplicati (tieni solo la prima occorrenza per codice)
-                if not any(c["code"] == txt for c in code_columns):
-                    code_columns.append({
-                        "code": txt,
-                        "x_center": x_center,
-                        "y_start": w["top"],
-                        "desc_words": []
-                    })
-
-        # 3. Assegna ogni parola alla colonna (codice) più vicina orizzontalmente
-        #    e verticalmente sotto di esso, ignorando header e numeri puri
-        for w in all_words:
-            txt = w["text"].strip()
-            if not txt:
-                continue
-                
-            # Ignora codici stessi, percentuali, valori numerici, separatori
-            if re.match(r'^(C\d{2}|TOT|%=?|,00|\d+[,.]?\d*|[|\-]+)$', txt):
-                continue
-                
-            # Ignora parole che sono chiaramente titoli di sezione/header
-            if len(txt) < 20 and any(kw in txt.upper() for kw in [
-                "SEZIONE", "QUADRO", "PERCENTUALE", "RICAVI", "MODALITÀ", 
-                "TIPOLOGIA", "AREA", "AMBITO", "PRODUZIONE", "ALTRI ELEMENTI"
-            ]):
-                continue
-
-            w_x = (w["x0"] + w["x1"]) / 2
-            w_y = w["top"]
+            # 2. Classifica le parole: Codici vs Blocchi di Testo
+            current_block = None
             
-            # Trova la colonna più vicina in X (tolleranza 50px)
-            closest_col = None
-            min_x_dist = float('inf')
-            for col in code_columns:
-                x_dist = abs(col["x_center"] - w_x)
-                if x_dist < min_x_dist:
-                    min_x_dist = x_dist
-                    closest_col = col
-            
-            # Assegna solo se siamo nella stessa colonna E sotto il codice
-            if closest_col and min_x_dist < 50 and w_y >= closest_col["y_start"] - 5:
-                closest_col["desc_words"].append(txt)
+            for w in words:
+                txt = w["text"].strip()
+                if not txt: continue
+                
+                # Calcola il centro della parola
+                w_center = {
+                    "x": (w["x0"] + w["x1"]) / 2,
+                    "y": (w["top"] + w["bottom"]) / 2,
+                    "txt": txt
+                }
 
-        # 4. Costruisci le descrizioni finali
-        for col in code_columns:
-            # Filtra rumore residuo e unisci
-            clean_words = [w for w in col["desc_words"] if not re.match(r'^[%\d,.\-()]+$', w)]
-            description = " ".join(clean_words).strip()
-            description = re.sub(r'\s+', ' ', description)  # Normalizza spazi multipli
+                # --- IDENTIFICA CODICI ---
+                if re.match(r'^(C\d{2})$', txt):
+                    codes_found.append(w_center)
+                    # Se stavo costruendo un blocco di testo, lo chiudo
+                    if current_block:
+                        text_blocks.append(current_block)
+                        current_block = None
+                    continue
+
+                # --- FILTRA RUMORE (Intestazioni, Numeri, ecc) ---
+                # Ignora se è chiaramente un'intestazione di sezione o un numero puro
+                is_noise = False
+                if len(txt) < 30: # Parole brevi
+                    if any(kw in txt.upper() for kw in ["SEZIONE", "QUADRO", "TOT", "PAGINA", "MODALITÀ"]):
+                        is_noise = True
+                    if re.match(r'^[\d\.,%\-\|]+$', txt): # Solo numeri/simboli
+                        is_noise = True
+                
+                if is_noise:
+                    if current_block: text_blocks.append(current_block)
+                    current_block = None
+                    continue
+
+                # --- COSTRUISCI BLOCCHI DI TESTO (Frasi) ---
+                # Se la parola è vicina all'ultima parola del blocco corrente, aggiungila
+                if current_block:
+                    last_w = current_block["words"][-1]
+                    dx = abs(w_center["x"] - last_w["x"])
+                    dy = abs(w_center["y"] - last_w["y"])
+                    
+                    # Se è sulla stessa riga o riga successiva allineata
+                    if dy < 15 and dx < 200: 
+                        current_block["words"].append(w_center)
+                        # Aggiorna il centro del blocco
+                        current_block["x"] = (current_block["x"] + w_center["x"]) / 2
+                        current_block["y"] = (current_block["y"] + w_center["y"]) / 2
+                        continue
+                
+                # Altrimenti inizia un nuovo blocco
+                if current_block:
+                    text_blocks.append(current_block)
+                
+                current_block = {
+                    "words": [w_center],
+                    "x": w_center["x"],
+                    "y": w_center["y"]
+                }
+
+            # Chiudi l'ultimo blocco della pagina
+            if current_block:
+                text_blocks.append(current_block)
+
+    # 3. MATCHING: Associa ogni Blocco di Testo al Codice più vicino
+    # Usiamo una lista per tracciare quali blocchi sono già stati assegnati
+    assigned_blocks = set()
+
+    for code in codes_found:
+        best_match = None
+        min_distance = float('inf')
+
+        for idx, block in enumerate(text_blocks):
+            if idx in assigned_blocks: continue
+
+            # Calcola distanza Euclidea tra Codice e Blocco
+            dx = code["x"] - block["x"]
+            dy = code["y"] - block["y"]
+            distance = math.sqrt(dx*dx + dy*dy)
+
+            # Logica di priorità:
+            # Preferiamo blocchi che sono "sotto" o "a destra" del codice
+            # Penalizziamo blocchi che sono "sopra" il codice (dy negativo grande)
+            if dy < -20: # Se il blocco è decisamente sopra il codice, scartalo
+                continue
+
+            # Se la distanza è la minima trovata finora
+            if distance < min_distance:
+                min_distance = distance
+                best_match = idx
+        
+        # Assegna il blocco migliore al codice
+        if best_match is not None:
+            assigned_blocks.add(best_match)
+            matched_block = text_blocks[best_match]
+            
+            # Ricostruisci la descrizione unendo le parole
+            description = " ".join(w["txt"] for w in matched_block["words"])
+            description = re.sub(r'\s+', ' ', description).strip()
+            
+            # Pulizia finale
+            description = re.sub(r'[\|]', ' ', description)
             description = description.strip(".,;:")
 
-            # Salva solo se la descrizione ha senso (>5 caratteri)
             if len(description) > 5:
-                result["campi"][col["code"]]["descrizione"] = description
-                result["campi"][col["code"]]["estratto_da_pdf"] = True
+                result["campi"][code["txt"]]["descrizione"] = description
+                result["campi"][code["txt"]]["estratto_da_pdf"] = True
             else:
-                # Fallback dinamico (mai hardcoded)
-                result["campi"][col["code"]]["descrizione"] = f"Campo {col['code']} - descrizione non rilevata nel layout"
-                result["campi"][col["code"]]["estratto_da_pdf"] = False
-
-        # 5. Rileva automaticamente vincoli di somma (es. "TOT=100%")
-        full_text = " ".join(w["text"] for w in all_words)
-        if "TOT" in full_text and "100" in full_text:
-            result["vincoli_modello"].append("Presenza vincolo di somma (TOT=100%) rilevato. Verificare raggruppamenti logici.")
-
-    # Ordina alfabeticamente/numericamente per output pulito
+                # Fallback se la descrizione è troppo corta
+                result["campi"][code["txt"]]["descrizione"] = f"Campo {code['txt']} - descrizione non rilevata"
+                result["campi"][code["txt"]]["estratto_da_pdf"] = False
+    
+    # Ordina i campi
     result["campi"] = dict(sorted(result["campi"].items()))
     return result
-
 # =============================================================================
 # PARSER ISTRUZIONI: estrae REGOLE e VINCOLI di compilazione
 # =============================================================================
