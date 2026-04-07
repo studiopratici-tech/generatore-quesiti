@@ -29,7 +29,8 @@ REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
 """
 
 # =============================================================================
-# PARSER MODELLO: VERSIONE CORRETTA - Legge per coordinate, NON salta righe
+# PARSER MODELLO: VERSIONE "GRIGLIA INTELIGENTE" (Vertical Lanes)
+# Risolve il problema delle descrizioni disallineate (C06-C43)
 # =============================================================================
 def parse_modello(pdf_path):
     import pdfplumber
@@ -43,91 +44,113 @@ def parse_modello(pdf_path):
         "vincoli_modello": []
     }
     
+    # Lista per tracciare i codici e le loro coordinate
+    detected_codes = []
+    
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            # 🎯 Estrai parole CON coordinate (fondamentale per layout a griglia)
+            # 🎯 Estrai parole CON coordinate precise
             words = page.extract_words(
-                x_tolerance=2,      # Unisce parole vicine orizzontalmente
-                y_tolerance=3,      # Unisce parole sulla stessa riga visiva
+                x_tolerance=3,
+                y_tolerance=3,
                 extra_attrs=["top", "bottom", "x0", "x1"]
             )
             if not words:
                 continue
             
-            # 🔍 Estrai codice ISA
+            # 1. Identifica tutti i Codici C## e calcola il loro centro X
+            for word in words:
+                text = word["text"].strip()
+                match = re.match(r'^(C\d{2})$', text)
+                if match:
+                    code = match.group(1)
+                    x_center = (word["x0"] + word["x1"]) / 2
+                    
+                    # Verifica se è già stato trovato (per evitare duplicati)
+                    if not any(c["code"] == code for c in detected_codes):
+                        detected_codes.append({
+                            "code": code,
+                            "x_center": x_center,
+                            "desc_parts": [],
+                            "y_pos": word["top"] # Per sapere da dove iniziare a cercare la descrizione
+                        })
+            
+            # Rileva codice ISA (es. EG75U)
             if not result["isa_code"]:
                 page_text = page.extract_text() or ""
                 match = re.search(r'Modello\s+([A-Z]{2}\d{2,3}[A-Z]?)', page_text, re.I)
                 if match:
                     result["isa_code"] = match.group(1).upper()
-            
-            # 🧩 Raggruppa parole per "riga visiva" (stessa coordinata Y ± tolleranza)
-            visual_rows = []
-            current_row = []
-            current_y = None
-            
-            for word in sorted(words, key=lambda w: (w["top"], w["x0"])):
-                y = word["top"]
-                if current_y is None or abs(y - current_y) > 4:
-                    if current_row:
-                        visual_rows.append(current_row)
-                    current_row = [word]
-                    current_y = y
-                else:
-                    current_row.append(word)
-            if current_row:
-                visual_rows.append(current_row)
-            
-            # 🔎 Cerca pattern C## + descrizione
-            i = 0
-            while i < len(visual_rows):
-                row = visual_rows[i]
+
+    # 2. Fase di Matching: Associa ogni parola alla colonna (Codice) più vicina
+    # Riapriamo il file per scansionare le descrizioni e assegnarle alle corsie
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            words = page.extract_words(
+                x_tolerance=3,
+                y_tolerance=3,
+                extra_attrs=["top", "bottom", "x0", "x1"]
+            )
+            if not words: continue
+
+            for word in words:
+                text = word["text"].strip()
+                if not text: continue
                 
-                for word in row:
-                    code_match = re.match(r'^(C\d{2})$', word["text"].strip())
-                    if code_match:
-                        code = code_match.group(1)
-                        
-                        # 📝 Estrai descrizione: testo DOPO il codice
-                        desc_parts = []
-                        found_code = False
-                        for w in row:
-                            if found_code and w["text"].strip() and not re.match(r'^(C\d{2}|TOT|%|,00)$', w["text"].strip(), re.I):
-                                desc_parts.append(w["text"])
-                            if w["text"].strip() == code:
-                                found_code = True
-                        
-                        # Continua su righe successive se descrizione incompleta
-                        j = i + 1
-                        while j < len(visual_rows) and len(" ".join(desc_parts)) < 200:
-                            next_row = visual_rows[j]
-                            next_text = " ".join(w["text"].strip() for w in next_row if w["text"].strip())
-                            if re.search(r'\bC\d{2}\b', next_text) or any(k in next_text.upper() for k in ["SEZIONE", "TOT=", "QUADRO", "MODALITÀ"]):
-                                break
-                            if next_text and not re.match(r'^[%\d\s,.\-()]+$', next_text):
-                                desc_parts.extend(w["text"] for w in next_row if w["text"].strip() and not re.match(r'^(C\d{2}|TOT|%|,00)$', w["text"].strip(), re.I))
-                            j += 1
-                        
-                        description = " ".join(desc_parts).strip()
-                        description = re.sub(r'\s+', ' ', description)
-                        description = re.sub(r'\s*[\|\-]\s*', ' ', description)
-                        description = description.strip("().,;:")
-                        
-                        if code not in result["campi"] and len(description) >= 10:
-                            result["campi"][code]["descrizione"] = description
-                            result["campi"][code]["estratto_da_pdf"] = True
+                # Ignoriamo i codici stessi e i numeri puri
+                if re.match(r'^(C\d{2}|TOT|%=?|,00|\d+[,.]?\d*)$', text):
+                    continue
                 
-                i += 1
-    
-    # ✅ Garantisce C01-C43 presenti (anche se vuoti → nessun buco nel prompt)
+                # Ignoriamo le intestazioni di sezione (es. "Sezione 1", "Quadro A")
+                if len(text) < 15 and ("Sezione" in text or "Quadro" in text):
+                    continue
+
+                word_x = (word["x0"] + word["x1"]) / 2
+                word_y = word["top"]
+
+                # Trova il codice la cui colonna X è più vicina a questa parola
+                closest_code = None
+                min_dist = float('inf')
+                
+                for entry in detected_codes:
+                    dist = abs(entry["x_center"] - word_x)
+                    # Tolleranza di larghezza colonna (es. 50 pixel)
+                    # E deve essere sotto il codice (o leggermente sopra se è un titolo)
+                    # Ma qui assumiamo che la descrizione sia nella stessa fascia verticale
+                    if dist < min_dist:
+                        min_dist = dist
+                        closest_code = entry
+                
+                # Se siamo abbastanza vicini alla colonna del codice, aggiungiamo la parola
+                if closest_code and min_dist < 60: # 60px è la tolleranza orizzontale
+                    # Evitiamo di catturare parole troppo lontane verticalmente se sono header
+                    # Qui catturiamo tutto ciò che cade nella colonna
+                    closest_code["desc_parts"].append(text)
+
+    # 3. Costruzione finale
+    for entry in detected_codes:
+        code = entry["code"]
+        # Unisce le parole trovate nella colonna
+        raw_desc = " ".join(entry["desc_parts"]).strip()
+        
+        # Pulizia: rimuove ripetizioni e caratteri spuri
+        clean_desc = re.sub(r'\s+', ' ', raw_desc)
+        clean_desc = re.sub(r'[\|]', ' ', clean_desc)
+        clean_desc = clean_desc.strip(".,;:")
+        
+        # Filtra descrizioni troppo corte (probabili errori)
+        if len(clean_desc) > 5:
+            result["campi"][code]["descrizione"] = clean_desc
+            result["campi"][code]["estratto_da_pdf"] = True
+
+    # 4. Sicurezza: Riempiamo i buchi (C01-C43) anche se non trovati
     for i in range(1, 44):
         code = f"C{i:02d}"
         if code not in result["campi"]:
             result["campi"][code]["descrizione"] = f"Campo {code} - verificare descrizione ufficiale"
             result["campi"][code]["estratto_da_pdf"] = False
-    
+            
     return result
-
 # =============================================================================
 # PARSER ISTRUZIONI: estrae REGOLE e VINCOLI di compilazione
 # =============================================================================
