@@ -8,6 +8,27 @@ from collections import defaultdict
 st.set_page_config(page_title="ISA - Compilazione Quadro C PRO", layout="wide", page_icon="📊")
 
 # =============================================================================
+# REGOLE GENERALI (valide per TUTTI gli ISA)
+# =============================================================================
+GENERAL_RULES = """
+REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
+1. REVENUE RECOGNITION:
+   - TD01 (Fattura): importo imponibile → positivo (+)
+   - TD04 (Nota di credito): importo imponibile → negativo (–) come storno
+   - Mai usare "Totale documento" (include IVA), sempre "Totale imponibile"
+
+2. REGIMI IVA SPECIALI:
+   - Split Payment (Art.17-ter): cercare "Art.17-ter", "scissione pagamenti", committente = PA
+   - Reverse Charge (Art.17 c.6): cercare "Art.17 c.6", "N6.3", "subappalto edile"
+   - Ritenute Art.25 D.L. 78/2010: cercare "ritenuta acconto", "bonifico parlante"
+
+3. SAFETY FIRST:
+   - Se una fattura presenta anche solo un dubbio ragionevole → NON forzare classificazione
+   - Segnalare in "NOTE E CRITICITÀ" con priorità (alta/media/bassa)
+   - Meglio una segnalazione in più che un errore in dichiarazione
+"""
+
+# =============================================================================
 # PARSER MODELLO UNIVERSALE (Logica Geometrica / Nearest Neighbor)
 # =============================================================================
 def parse_modello(pdf_path):
