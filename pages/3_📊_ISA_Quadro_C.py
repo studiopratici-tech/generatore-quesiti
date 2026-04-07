@@ -29,64 +29,102 @@ REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
 """
 
 # =============================================================================
-# PARSER MODELLO: estrae CAMPI e DESCRIZIONI dalla tabella visiva
+# PARSER MODELLO: VERSIONE CORRETTA - Legge per coordinate, NON salta righe
 # =============================================================================
 def parse_modello(pdf_path):
+    import pdfplumber
+    import re
+    import logging
+    from collections import defaultdict
+    
     result = {
         "isa_code": None,
         "campi": defaultdict(dict),
         "vincoli_modello": []
     }
     
-    text_content = ""
     with pdfplumber.open(pdf_path) as pdf:
         for page in pdf.pages:
-            extracted = page.extract_text()
-            if extracted:
-                text_content += extracted + "\n"
-            tables = page.extract_tables()
-            for table in tables:
-                if table:
-                    for row in table:
-                        if row:
-                            row_text = " | ".join(str(cell).strip() for cell in row if cell and str(cell).strip())
-                            if row_text:
-                                text_content += row_text + "\n"
+            # 🎯 Estrai parole CON coordinate (fondamentale per layout a griglia)
+            words = page.extract_words(
+                x_tolerance=2,      # Unisce parole vicine orizzontalmente
+                y_tolerance=3,      # Unisce parole sulla stessa riga visiva
+                extra_attrs=["top", "bottom", "x0", "x1"]
+            )
+            if not words:
+                continue
+            
+            # 🔍 Estrai codice ISA
+            if not result["isa_code"]:
+                page_text = page.extract_text() or ""
+                match = re.search(r'Modello\s+([A-Z]{2}\d{2,3}[A-Z]?)', page_text, re.I)
+                if match:
+                    result["isa_code"] = match.group(1).upper()
+            
+            # 🧩 Raggruppa parole per "riga visiva" (stessa coordinata Y ± tolleranza)
+            visual_rows = []
+            current_row = []
+            current_y = None
+            
+            for word in sorted(words, key=lambda w: (w["top"], w["x0"])):
+                y = word["top"]
+                if current_y is None or abs(y - current_y) > 4:
+                    if current_row:
+                        visual_rows.append(current_row)
+                    current_row = [word]
+                    current_y = y
+                else:
+                    current_row.append(word)
+            if current_row:
+                visual_rows.append(current_row)
+            
+            # 🔎 Cerca pattern C## + descrizione
+            i = 0
+            while i < len(visual_rows):
+                row = visual_rows[i]
+                
+                for word in row:
+                    code_match = re.match(r'^(C\d{2})$', word["text"].strip())
+                    if code_match:
+                        code = code_match.group(1)
+                        
+                        # 📝 Estrai descrizione: testo DOPO il codice
+                        desc_parts = []
+                        found_code = False
+                        for w in row:
+                            if found_code and w["text"].strip() and not re.match(r'^(C\d{2}|TOT|%|,00)$', w["text"].strip(), re.I):
+                                desc_parts.append(w["text"])
+                            if w["text"].strip() == code:
+                                found_code = True
+                        
+                        # Continua su righe successive se descrizione incompleta
+                        j = i + 1
+                        while j < len(visual_rows) and len(" ".join(desc_parts)) < 200:
+                            next_row = visual_rows[j]
+                            next_text = " ".join(w["text"].strip() for w in next_row if w["text"].strip())
+                            if re.search(r'\bC\d{2}\b', next_text) or any(k in next_text.upper() for k in ["SEZIONE", "TOT=", "QUADRO", "MODALITÀ"]):
+                                break
+                            if next_text and not re.match(r'^[%\d\s,.\-()]+$', next_text):
+                                desc_parts.extend(w["text"] for w in next_row if w["text"].strip() and not re.match(r'^(C\d{2}|TOT|%|,00)$', w["text"].strip(), re.I))
+                            j += 1
+                        
+                        description = " ".join(desc_parts).strip()
+                        description = re.sub(r'\s+', ' ', description)
+                        description = re.sub(r'\s*[\|\-]\s*', ' ', description)
+                        description = description.strip("().,;:")
+                        
+                        if code not in result["campi"] and len(description) >= 10:
+                            result["campi"][code]["descrizione"] = description
+                            result["campi"][code]["estratto_da_pdf"] = True
+                
+                i += 1
     
-    # Estrai codice ISA
-    pattern = r'\b([A-Z]{2}\d{2,3}[A-Z]?)\b'
-    matches = re.findall(pattern, text_content)
-    for match in matches:
-        if match not in ['DPR', 'TUIR', 'IVA', 'CIG', 'PA', 'UE', 'DDT', 'SAT']:
-            result["isa_code"] = match
-            break
-    
-    # Estrai campi C01, C02... con descrizioni
-    field_patterns = [
-        r'C(\d{2})\s*[:\-]?\s*([^\n|%]+?)(?=\n\s*C\d{2}|\n\s*TOT|\n\s*%|\Z)',
-        r'C(\d{2})\s+([^\n|%]+?)(?=\n\s*C\d{2}|\n\s*TOT|\n\s*%|\Z)',
-    ]
-    
-    for pattern in field_patterns:
-        for match in re.finditer(pattern, text_content):
-            field_num = match.group(1)
-            description = match.group(2).strip()
-            description = re.sub(r'\s+', ' ', description)
-            description = re.sub(r'\|', '', description)
-            if len(description) > 5 and len(description) < 300:
-                field_code = f"C{field_num}"
-                result["campi"][field_code]["descrizione"] = description
-    
-    # Estrai vincoli dal modello
-    if "TOT" in text_content and "100" in text_content:
-        if "C01" in text_content and "C09" in text_content and "DG76U" in text_content:
-            result["vincoli_modello"].append("C01+C02+C03+C04+C05+C06+C07+C08+C09 = 100%")
-        if "C01" in text_content and "C25" in text_content and "EG75U" in text_content:
-            result["vincoli_modello"].append("C01+C02+...+C25 = 100% (Specializzazione)")
-        if "C26" in text_content and "C29" in text_content and "EG75U" in text_content:
-            result["vincoli_modello"].append("C26+C27+C28+C29 = 100% (Tipologia servizio)")
-        if "C42" in text_content and "C43" in text_content and "EG75U" in text_content:
-            result["vincoli_modello"].append("C42+C43 = 100% (Ambito attività)")
+    # ✅ Garantisce C01-C43 presenti (anche se vuoti → nessun buco nel prompt)
+    for i in range(1, 44):
+        code = f"C{i:02d}"
+        if code not in result["campi"]:
+            result["campi"][code]["descrizione"] = f"Campo {code} - verificare descrizione ufficiale"
+            result["campi"][code]["estratto_da_pdf"] = False
     
     return result
 
