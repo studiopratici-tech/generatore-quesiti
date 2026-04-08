@@ -261,36 +261,56 @@ Per ogni "Descrizione Ricorrente" identificata nella Fase 1.1, indica:
 
 ⚠️ Se una descrizione potrebbe appartenere a più campi (es. "lavori idraulici" generico), segnala come "INCERTA" e proponi l'ipotesi più prudente specificando cosa servirebbe per certezza.
 
-📊 FASE 3: COMPILAZIONE FINALE E VALIDAZIONE
-Solo dopo aver completato le Fasi 1 e 2, procedi con:
+📊 FASE 3: COMPILAZIONE FINALE E VALIDAZIONE (ESECUZIONE OBBLIGATORIA)
+⛔ PROTOCOLLO SEQUENZIALE FATTURA PER FATTURA:
+È SEVERAMENTE VIETATO fare stime, campionature o raggruppamenti preventivi. Devi seguire tassativamente questi passi:
+1. SCANSIONE LINEARE: Leggi OGNI fattura dalla prima all'ultima pagina. Non saltarne nessuna.
+2. ASSEGNAZIONE SINGOLA: Per ogni fattura, leggi la descrizione INTERA e assegnala a UNO solo campo C##.
+3. REGISTRO VISIBILE: Mostra esplicitamente le prime 25 fatture processate in una tabella per dimostrare il lavoro svolto.
+4. AGGREGAZIONE: SOLO dopo aver classificato TUTTE le fatture, calcola i totali e le percentuali.
 
-3.1 TABELLA RIEPILOGATIVA QUADRO C
-| Campo | Valore (% o Importo) | N. Fatture Incluse | Riferimento Fasi 1-2 |
-|-------|---------------------|-------------------|---------------------|
-| C27 | 45% | 67 | Gruppo "Manutenzione" da Fase 2 |
-| C26 | 35% | 23 | Gruppo "Installazione" da Fase 2 |
+📋 FORMATO OUTPUT RICHIESTO (RISPETTALO ALLA LETTERA):
 
-3.2 ANALISI DI COERENZA
-- Verifica vincoli di somma (es. C01+...+C09 = 100%)
-- Verifica coerenza tra Fasi 1-2-3 (nessuna fattura esclusa o doppia)
-- Verifica regimi IVA speciali (C32, C33, C34 se presenti)
+1️⃣ REGISTRO FATTURE (ESEMPIO PRIME 25)
+| N. Fattura | Data | Imponibile € | Descrizione Sintetica | Campo C## Assegnato |
+|------------|------|--------------|-----------------------|---------------------|
+| [NR] | [DATA] | [IMPORTO] | [TESTO COMPLETO] | [CXX] |
+(...continua per almeno 25 righe...)
 
-3.3 SEGNALAZIONE CRITICITÀ (Template Obbligatorio)
-Per ogni dubbio residuo:
+2️⃣ TABELLA RIEPILOGATIVA QUADRO C (COMPILA TUTTI I CAMPI C01-C43)
+⚠️ REGOLA MATEMATICA: C01+C02+...+C25 DEVE fare ESATTAMENTE 100%. Stessa regola per C26-C30, C37-C40, C41-C43.
+| Campo | Descrizione | Imponibile Totale € | % sui Ricavi | N. Fatture |
+|-------|-------------|---------------------|--------------|------------|
+| C01 | ... | 0,00 | 0% | 0 |
+| C02 | ... | 0,00 | 0% | 0 |
+...
+| C25 | ... | 0,00 | 0% | 0 |
+| TOT C01-C25 | | [IMPORTO] | 100,0% ✅ | [NUM] |
+(...ripeti identica struttura per Tipologia Servizio C26-C30, Area C37-C40, Ambito C41-C43)
+
+3️⃣ GIUSTIFICAZIONE ANALITICA OBBLIGATORIA
+Per OGNI campo C## con valore >0%, elenca TUTTE le fatture che lo compongono:
+[C27 - Manutenzione | 45% | € 225.000 | 67 fatture]
+- Fatt. 102 del 15/01 - € 5.000 - "Sostituzione caldaia..."
+- Fatt. 115 del 22/02 - € 8.500 - "Riparazione impianto..."
+(...elenca TUTTE le 67 fatture assegnate a questo campo)
+
+4️⃣ SEGNALAZIONE CRITICITÀ (Template Obbligatorio)
 [CRITICITÀ - PRIORITÀ: ALTA/MEDIA/BASSA]
 Fattura N. [XXX] del [DD-MM-YYYY]
 Problema: [descrizione breve]
-Ipotesi di classificazione: [campo proposto] + [motivazione]
+Classificazione adottata: [campo C##] + [motivazione tecnica]
 Dati mancanti per certezza: [cosa servirebbe]
 Raccomandazione: [verificare con cliente / chiedere documentazione]
 
-3.4 CHECKLIST PRE-INVIO
-- [ ] Tutte le fatture allegate sono state classificate (nessuna esclusa)
-- [ ] Tutti i vincoli di somma % rispettati (tolleranza 0,1%)
-- [ ] Note di credito applicate come storni (non nuovi ricavi)
-- [ ] Regimi IVA (split/reverse) coerenti con fatture
-- [ ] Localizzazioni allocate correttamente (se richiesto dal modello)
-- [ ] Ambiguità segnalate, non nascoste
+5️⃣ CHECKLIST PRE-INVIO (DICHIARA ESPLICITAMENTE)
+- [ ] Tutte le fatture allegate sono state lette e classificate (nessuna esclusa)
+- [ ] Somma C01+...+C25 = [X]% (Target: 100% ±0,1%) ✅/❌
+- [ ] Somma C26+...+C30 = [X]% (Target: 100% ±0,1%) ✅/❌
+- [ ] Somma C37+...+C40 = [X]% (Target: 100% ±0,1%) ✅/❌
+- [ ] Somma C41+C42+C43 = [X]% (Target: 100% ±0,1%) ✅/❌
+- [ ] Note di credito applicate come storni negativi (non nuovi ricavi)
+- [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
 💡 ISTRUZIONE FINALE DI SAFETY:
 Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
