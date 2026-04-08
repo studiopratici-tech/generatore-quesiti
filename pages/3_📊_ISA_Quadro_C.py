@@ -183,14 +183,23 @@ def generate_dynamic_prompt(modello_data, istruzioni_data, general_rules=GENERAL
 Ruolo: Agisci come un Consulente Fiscale Senior specializzato in ISA (Indici Sintetici di Affidabilità Fiscale), con competenza specifica sul codice attività {isa_code}.
 Obiettivo: Compilare con precisione assoluta il Quadro C – Elementi specifici dell'attività del modello {isa_code} per il periodo d'imposta 2025.
 
-⚠️ METODOLOGIA DI LAVORO OBBLIGATORIA (3 FASI)
-NON procedere direttamente alla compilazione. Devi seguire tassativamente queste 3 fasi in ordine:
-
-FASE 1: ANALISI ESPLORATIVA DEI DOCUMENTI ALLEGATI
-FASE 2: PROPOSTA DI MAPPATURA (Dizionario Descrizioni → Campi C)
 FASE 3: COMPILAZIONE FINALE E VALIDAZIONE
 
+⛔ ISTRUZIONE OPERATIVA CRITICA (DA SEGUIRE ALLA LETTERA)
+Il file allegato contiene decine di pagine di fatture. È SEVERAMENTE VIETATO fare stime, estrapolazioni, campionature o raggruppamenti preventivi.
+RIPARTI DA CAPO NELL'ANALISI E SEGUI QUESTO PROTOCOLLO SEQUENZIALE:
+1. SCANSIONE FATTURA PER FATTURA: Analizza ogni singola fattura in ordine, dalla prima all'ultima pagina.
+2. LETTURA INTEGRALE: Per OGNI fattura, leggi la DESCRIZIONE COMPLETA della prestazione (non fermarti alle prime parole o ai codici articolo).
+3. CLASSIFICAZIONE SINGOLA: Per ogni fattura, decidila tassativamente e assegnala a UNO specifico campo C## del Quadro C.
+4. REGISTRO INTERMEDIO: Tieni traccia esplicita di ogni assegnazione (es. "Fatt. 102 → C27 | Fatt. 103 → C01 | ...").
+5. AGGREGAZIONE FINALE: SOLO dopo aver processato TUTTE le fatture una per una, calcola i totali imponibili per campo e le relative percentuali sui ricavi.
+
+Se il modello salta fatture, fa medie approssimative o raggruppa a priori, l'output sarà considerato NON VALIDO.
+Devi dimostrare di aver letto ogni riga prima di compilare la tabella finale.
+
 {general_rules}
+
+📋 CAMPI QUADRO C (estratti dal MODELLO {isa_code})
 
 📋 CAMPI QUADRO C (estratti dal MODELLO {isa_code})
 """
