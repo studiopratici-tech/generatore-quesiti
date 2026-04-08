@@ -242,16 +242,17 @@ Per ogni "Descrizione Ricorrente" identificata nella Fase 1.1, indica:
 ⛔ PROTOCOLLO SEQUENZIALE FATTURA PER FATTURA:
 1. SCANSIONE LINEARE: Leggi OGNI fattura dalla prima all'ultima pagina. Non saltarne nessuna.
 2. ASSEGNAZIONE SINGOLA: Per ogni fattura, leggi la descrizione INTERA e assegnala a UNO solo campo C##.
-3. REGISTRO VISIBILE: Mostra esplicitamente le prime 25 fatture processate in una tabella.
+3. REGISTRO VISIBILE: Mostra esplicitamente TUTTE le fatture processate in una tabella completa. Non tralasciarne nessuna.
 4. AGGREGAZIONE: SOLO dopo aver classificato TUTTE le fatture, calcola i totali e le percentuali.
 
 📋 FORMATO OUTPUT RICHIESTO (RISPETTALO ALLA LETTERA):
 
-1️⃣ REGISTRO FATTURE (ESEMPIO PRIME 25)
-| N. Fattura | Data | Imponibile € | Descrizione Sintetica | Campo C## Assegnato |
-|------------|------|--------------|-----------------------|---------------------|
-| [NR] | [DATA] | [IMPORTO] | [TESTO COMPLETO] | [CXX] |
-(...continua per almeno 25 righe...)
+1️⃣ REGISTRO COMPLETO DI TUTTE LE FATTURE
+⚠️ DEVI elencare OGNI SINGOLA FATTURA processata, senza eccezioni.
+| N. Fattura | Data | Imponibile € | Descrizione Completa | Campo C## | Motivazione Breve |
+|------------|------|--------------|---------------------|-----------|-------------------|
+| [NR] | [DATA] | [IMPORTO] | [TESTO INTEGRALE] | [CXX] | [Motivo] |
+(...elenca TUTTE le fatture, nessuna esclusa...)
 
 2️⃣ TABELLA RIEPILOGATIVA QUADRO C (COMPILA TUTTI I CAMPI C01-C43)
 ⚠️ REGOLA MATEMATICA: C01+C02+...+C25 DEVE fare ESATTAMENTE 100%. Stessa regola per C26-C30, C37-C40, C41-C43.
