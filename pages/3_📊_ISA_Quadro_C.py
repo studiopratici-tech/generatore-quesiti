@@ -29,7 +29,7 @@ REGOLE GENERALI DI COMPILAZIONE (valide per ogni ISA):
 """
 
 # =============================================================================
-# PARSER MODELLO: VERSIONE MIGLIORATA (testuale ma completa)
+# PARSER MODELLO: VERSIONE OTTIMIZZATA PER LAYOUT A SEZIONI (universale)
 # =============================================================================
 def parse_modello(pdf_path):
     result = {
@@ -44,14 +44,6 @@ def parse_modello(pdf_path):
             extracted = page.extract_text()
             if extracted:
                 text_content += extracted + "\n"
-            tables = page.extract_tables()
-            for table in tables:
-                if table:
-                    for row in table:
-                        if row:
-                            row_text = " | ".join(str(cell).strip() for cell in row if cell and str(cell).strip())
-                            if row_text:
-                                text_content += row_text + "\n"
     
     # Estrai codice ISA
     pattern = r'\b([A-Z]{2}\d{2,3}[A-Z]?)\b'
@@ -61,48 +53,81 @@ def parse_modello(pdf_path):
             result["isa_code"] = match
             break
     
-    # 🎯 STRATEGIA MIGLIORATA: Per ogni codice C##, cerca nel testo e cattura TUTTO ciò che segue
+    # 🎯 ESTRAGGO CAMPI C## CERCANDO NEL TESTO COMPLETO
+    # Strategia: per ogni C## trovato, cerco il testo descrittivo nelle vicinanze
+    
+    # Trova tutte le occorrenze di C## nel testo con la loro posizione
     all_codes = [f"C{i:02d}" for i in range(1, 44)]
     
     for code in all_codes:
-        pattern = rf'{re.escape(code)}\s*([-:]?)\s*([\s\S]*?)(?=\n\s*C\d{{2}}\s|Sezione\s*\d|TIPOLOGIA|MODALITÀ|Percentuale\s*sui\s*ricavi|TOT\s*=|AMBITO|AREA\s*DI|PRODUZIONE|\Z)'
+        # Cerca il codice nel testo
+        code_pattern = rf'\b{re.escape(code)}\b'
+        matches = list(re.finditer(code_pattern, text_content, re.IGNORECASE))
         
-        match = re.search(pattern, text_content, re.IGNORECASE)
-        if match:
-            description = match.group(2).strip()
+        if not matches:
+            continue
+        
+        # Per ogni occorrenza del codice, cerca la descrizione dopo di esso
+        for match in matches:
+            # Prendi il testo DOPO il codice (fino a 300 caratteri)
+            start_pos = match.end()
+            end_pos = min(start_pos + 300, len(text_content))
+            after_code = text_content[start_pos:end_pos]
             
-            # Pulizia avanzata del testo
-            lines = description.split('\n')
-            clean_lines = []
+            # Estrai la prima frase significativa dopo il codice
+            # Ignora %, numeri, "TOT", "Sezione", ecc.
+            lines = after_code.split('\n')
+            description_parts = []
+            
             for line in lines:
                 line = line.strip()
-                if not line: continue
-                if re.match(r'^[%\d\s,.\-()|]+$', line): continue
-                if len(line) < 3: continue
-                if any(kw in line.upper() for kw in ['RICAVI', 'PERCENTUALE', 'CAMPO', 'NUMERO']): continue
-                clean_lines.append(line)
+                
+                # Salta linee vuote o troppo corte
+                if not line or len(line) < 5:
+                    continue
+                
+                # Salta linee che sono solo numeri, %, separatori
+                if re.match(r'^[\d\s,.\-()%|]+$', line):
+                    continue
+                
+                # Salta header/sezioni
+                if any(kw in line.upper() for kw in [
+                    'SEZIONE', 'TOT', 'RICAVI', 'PERCENTUALE', 
+                    'MODALITÀ', 'TIPOLOGIA', 'QUADRO', 'CAMPO',
+                    'AREA', 'AMBITO', 'PRODUZIONE'
+                ]):
+                    continue
+                
+                # Trovato testo valido!
+                description_parts.append(line)
+                
+                # Se abbiamo abbastanza testo, fermati
+                if len(' '.join(description_parts)) > 20:
+                    break
             
-            description = ' '.join(clean_lines)
-            description = re.sub(r'\s+', ' ', description)
-            description = re.sub(r'[\|\-]', ' ', description)
-            description = description.strip(".,;:()")
-            
-            if len(description) >= 10:
-                result["campi"][code]["descrizione"] = description
-                result["campi"][code]["estratto_da_pdf"] = True
+            # Costruisci descrizione finale
+            if description_parts:
+                description = ' '.join(description_parts)
+                description = re.sub(r'\s+', ' ', description)  # Normalizza spazi
+                description = re.sub(r'[\|\-]', ' ', description)
+                description = description.strip(".,;:()")
+                
+                # Salva solo se significativo (>15 caratteri)
+                if len(description) >= 15:
+                    result["campi"][code]["descrizione"] = description
+                    result["campi"][code]["estratto_da_pdf"] = True
+                    break  # Usa la prima occorrenza valida
     
     # Estrai vincoli dal modello
     if "TOT" in text_content and "100" in text_content:
-        if "C01" in text_content and "C09" in text_content and "DG76U" in text_content:
-            result["vincoli_modello"].append("C01+C02+C03+C04+C05+C06+C07+C08+C09 = 100%")
-        if "C01" in text_content and "C25" in text_content and "EG75U" in text_content:
+        if "C01" in text_content and "C25" in text_content:
             result["vincoli_modello"].append("C01+C02+...+C25 = 100% (Specializzazione)")
-        if "C26" in text_content and "C29" in text_content and "EG75U" in text_content:
+        if "C26" in text_content and "C30" in text_content:
             result["vincoli_modello"].append("C26+C27+C28+C29+C30 = 100% (Tipologia servizio)")
-        if "C42" in text_content and "C43" in text_content and "EG75U" in text_content:
-            result["vincoli_modello"].append("C42+C43 = 100% (Ambito attività)")
         if "C37" in text_content and "C40" in text_content:
             result["vincoli_modello"].append("C37+C38+C39+C40 = 100% (Area svolgimento)")
+        if "C41" in text_content and "C43" in text_content:
+            result["vincoli_modello"].append("C41+C42+C43 = 100% (Ambito attività)")
     
     return result
 
