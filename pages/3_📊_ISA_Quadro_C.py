@@ -176,6 +176,15 @@ FASE 3: COMPILAZIONE FINALE E VALIDAZIONE
 
 ⛔ ISTRUZIONE OPERATIVA CRITICA (DA SEGUIRE ALLA LETTERA)
 Il file allegato contiene decine di pagine di fatture. È SEVERAMENTE VIETATO fare stime, estrapolazioni, campionature o raggruppamenti preventivi.
+
+📦 PROTOCOLLO DOCUMENTI LUNGHI (>30 PAGINE):
+Se il file allegato supera le 30 pagine, DEVI dividerlo mentalmente in blocchi da 20 pagine:
+1. Analizza blocco 1 (pag 1-20) → crea registro parziale
+2. Analizza blocco 2 (pag 21-40) → aggiorna registro
+3. Continua fino all'ultima pagina
+4. SOLO ALLA FINE unifica tutti i registri e calcola le percentuali totali
+NON provare a tenere tutto in memoria contemporaneamente. Lavora a blocchi sequenziali.
+
 RIPARTI DA CAPO NELL'ANALISI E SEGUI QUESTO PROTOCOLLO SEQUENZIALE:
 1. SCANSIONE FATTURA PER FATTURA: Analizza ogni singola fattura in ordine, dalla prima all'ultima pagina.
 2. LETTURA INTEGRALE: Per OGNI fattura, leggi la DESCRIZIONE COMPLETA della prestazione (non fermarti alle prime parole o ai codici articolo).
@@ -369,11 +378,46 @@ if uploaded_modello or uploaded_istruzioni:
             if uploaded_docs:
                 st.info(f"📁 {len(uploaded_docs)} documenti aziendali caricati per l'analisi (fatture/bilancio)")
             
-            # Genera prompt
+                       # Genera prompt
             prompt = generate_dynamic_prompt(modello_data, istruzioni_data)
             
             st.subheader("🤖 Prompt Generato (Analisi in 3 Fasi)")
             st.code(prompt, language='text')
+            
+            # 🔍 VALIDATORE AUTOMATICO (dopo che l'AI risponde, l'utente incollerà qui la risposta)
+            st.markdown("---")
+            st.subheader("✅ Validazione Output AI")
+            st.info("Dopo aver ricevuto la risposta dall'AI, incolla il testo qui sotto per verificare automaticamente errori matematici")
+            
+            ai_response = st.text_area(
+                "Incolla qui la risposta completa dell'AI",
+                height=300,
+                placeholder="L'AI risponderà con tabelle e giustificazioni..."
+            )
+            
+            if ai_response:
+                validation = validate_ai_output(ai_response)
+                
+                if validation["errors"]:
+                    st.error("❌ ERRORI RILEVATI (correggere prima di procedere):")
+                    for error in validation["errors"]:
+                        st.error(error)
+                else:
+                    st.success("✅ Nessun errore matematico rilevato!")
+                
+                if validation["warnings"]:
+                    st.warning("⚠️ AVVISI:")
+                    for warning in validation["warnings"]:
+                        st.warning(warning)
+                
+                # Download validato
+                if validation["valid"]:
+                    st.download_button(
+                        label="📥 Scarica Output Validato (.txt)",
+                        data=ai_response,
+                        file_name=f"quadro_c_{isa_code}_validato.txt",
+                        mime="text/plain"
+                    )
             
             st.download_button(
                 label="📥 Scarica Prompt (.txt)",
