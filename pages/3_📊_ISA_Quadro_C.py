@@ -312,13 +312,13 @@ Raccomandazione: [verificare con cliente / chiedere documentazione]
 - [ ] Note di credito applicate come storni negativi (non nuovi ricavi)
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-            💡 ISTRUZIONE FINALE DI SAFETY:
-            Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
+💡 ISTRUZIONE FINALE DI SAFETY:
+ Se una fattura presenta anche solo un dubbio ragionevole su classificazione...
             
-            📝 FORMATO OUTPUT OBBLIGATORIO (STRUTTURA DA SEGUIRE)
-            Per assicurarmi che il lavoro sia completo, il tuo output finale DEVE seguire ESATTAMENTE questo schema. Se salti una sezione, il lavoro è INVALIDO.
+📝 FORMATO OUTPUT OBBLIGATORIO (STRUTTURA DA SEGUIRE)
+Per assicurarmi che il lavoro sia completo, il tuo output finale DEVE seguire ESATTAMENTE questo schema...
             
-            ──────────────────────────────────────────────────────
+         ──────────────────────────────────────────────────────
             1. REGISTRO FATTURE (Esempio prime 10)
             ──────────────────────────────────────────────────────
             | N. Fattura | Data | Imponibile € | Campo C## | Descrizione Sintetica |
@@ -356,10 +356,9 @@ Raccomandazione: [verificare con cliente / chiedere documentazione]
             - [ ] Somma C01-C25 = 100%? SI/NO
             - [ ] Somma C26-C30 = 100%? SI/NO
             
-            """
-            
-            return prompt 
-
+ """
+        
+ return prompt
 # =============================================================================
 # INTERFACCIA STREAMLIT
 # =============================================================================
