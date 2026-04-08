@@ -1,167 +1,188 @@
-import streamlit as st
-import pdfplumber
-import pandas as pd
-import re
-from decimal import Decimal
-
-st.set_page_config(page_title="Partita Doppia → SPIACO", layout="wide")
-st.title("📘 Estrattore Scritture Contabili → Piano SPIACO")
+import csv
+import random
+import datetime
 
 # ==============================================================================
-# 1. MAPPATURA MANUALE → SPIACO (completa per i conti più frequenti del manuale)
+# CONFIGURAZIONE E MAPPATURA PIANO DEI CONTI SPIACO
 # ==============================================================================
-MAPPATURA_SPIACO = {
-    "clienti": "28.01.001", "clienti c/vendite": "28.01.001", "crediti vs. clienti": "28.01.001",
-    "crediti vs fornitori": "49.13.001", "fornitore": "49.13.001", "fornitori": "49.13.001",
-    "debiti vs. fornitori": "49.13.001", "fatture da emettere": "28.01.037", "fatture da ricevere": "49.13.005",
-    "iva a debito": "49.23.013", "iva vendite": "49.23.013", "iva su vendite": "49.23.013",
-    "iva a credito": "28.11.017", "iva acquisti": "28.11.017", "iva su acquisti": "28.11.017",
-    "banca": "34.01.001", "banca c/c": "34.01.001", "cassa": "34.05.001", "cassa contanti": "34.05.001",
-    "assegni": "34.03.001", "cassa assegni": "34.03.001",
-    "merci c/vendite": "60.01.001", "ricavi c/vendite": "60.01.001", "prodotti c/vendite": "60.01.001",
-    "merci c/acquisti": "73.01.013", "merci conto acquisti": "73.01.013",
-    "spese di trasporto": "75.01.005", "oneri bancari": "92.01.001", "commissioni bancarie": "93.15.061",
-    "impianti": "13.05.053", "macchinari": "13.05.053", "automezzi": "13.09.001",
-    "f.do ammortamento": "16.00.000", "ammortamento": "83.00.000",
-    "capitale sociale": "40.01.001", "riserva legale": "40.07.001", "utile d'esercizio": "40.17.001",
-    "perdita d'esercizio": "40.17.005", "dividendi": "49.27.089",
-    "interessi attivi": "93.13.001", "interessi passivi": "93.15.001",
-    "crediti finanziari": "22.23.001", "debiti finanziari": "49.09.001",
-    "salari e stipendi": "79.01.001", "oneri sociali": "79.03.001", "personale c/retribuzioni": "49.27.025",
-    "fondo tfr": "46.01.001", "inps c/contributi": "49.25.001", "erario c/ritenute": "49.23.029",
-    "resI su acquisti": "73.03.001", "resI su vendite": "60.01.101",
-    "sconti attivi": "60.01.089", "sconti passivi": "92.01.137",
-    "abbuoni attivi": "60.01.093", "abbuoni passivi": "92.01.141",
-    "arrotondamenti attivi": "71.01.073", "arrotondamenti passivi": "92.01.145"
+
+# Mappatura basata sul file SPIACO_260323082320.pdf fornito
+SPIACO = {
+    # PATRIMONIALI / FINANZIARI
+    "BANCA": {"codice": "34.01.001", "descrizione": "BANCA C/C A", "tipo": "Attivo"},
+    "CASSA": {"codice": "34.05.001", "descrizione": "CASSA CONTANTI", "tipo": "Attivo"},
+    "CLIENTI": {"codice": "28.01.001", "descrizione": "CLIENTE", "tipo": "Attivo"},
+    "FORNITORI": {"codice": "49.13.001", "descrizione": "FORNITORE", "tipo": "Passivo"},
+    "CREDITI_DIVERSI": {"codice": "28.15.125", "descrizione": "CREDITI DIVERSI", "tipo": "Attivo"},
+    "DEBITI_DIVERSI": {"codice": "49.27.113", "descrizione": "DEBITI DIVERSI", "tipo": "Passivo"},
+    "ERARIO_IVA_DEB": {"codice": "49.23.013", "descrizione": "ERARIO C/IVA VENDITE", "tipo": "Passivo"},
+    "ERARIO_IVA_CRED": {"codice": "28.11.017", "descrizione": "ERARIO C/IVA ACQUISTI", "tipo": "Attivo"},
+    "ERARIO_IRAP": {"codice": "49.23.005", "descrizione": "ERARIO C/IRAP", "tipo": "Passivo"},
+    "ERARIO_IRES": {"codice": "49.23.001", "descrizione": "ERARIO C/IRES", "tipo": "Passivo"},
+    
+    # CE / COSTI
+    "MERCI_ACQ": {"codice": "73.01.013", "descrizione": "MERCI C/ACQUISTI", "tipo": "Costo"},
+    "SPESE_TRASPORTO": {"codice": "75.01.005", "descrizione": "TRASPORTI", "tipo": "Costo"},
+    "SPESE_TEL": {"codice": "75.11.113", "descrizione": "SPESE TELEFONICHE", "tipo": "Costo"},
+    "SPESE_BANCARIE": {"codice": "92.01.001", "descrizione": "IMPOSTA DI BOLLO", "tipo": "Costo"}, # O 93.15.086 SPESE DIVERSE BANCARIE
+    "MANUTENZIONI": {"codice": "75.05.181", "descrizione": "MANUTENZIONI E RIPARAZIONI", "tipo": "Costo"},
+    "SALARI": {"codice": "79.01.001", "descrizione": "SALARI", "tipo": "Costo"},
+    "ONERI_SOCIALI": {"codice": "79.03.001", "descrizione": "ONERI INPS", "tipo": "Costo"},
+    "AMMORTAMENTO_AUTO": {"codice": "83.09.001", "descrizione": "AMM.TO AUTOVETTURE", "tipo": "Costo"},
+    "AMMORTAMENTO_PC": {"codice": "83.09.065", "descrizione": "AMM.TO COMPUTER ED ACCESSORI", "tipo": "Costo"},
+    
+    # CE / RICAVI
+    "MERCI_VEND": {"codice": "60.01.001", "descrizione": "RICAVI DA CESSIONI DI BENI", "tipo": "Ricavo"},
+    "PROVENTI_DIVERSI": {"codice": "71.01.049", "descrizione": "RICAVI ACCESSORI DIVERSI", "tipo": "Ricavo"},
+    
+    # ALTRO
+    "FONDO_AMM_AUTO": {"codice": "16.07.001", "descrizione": "F.DO AMM.TO AUTOVETTURE", "tipo": "Rettifica"},
+    "FONDO_AMM_PC": {"codice": "16.07.045", "descrizione": "F.DO AMM.TO COMPUTER ED ACCESSORI", "tipo": "Rettifica"},
+    "FONDO_TFR": {"codice": "46.01.001", "descrizione": "FONDO T.F.R.", "tipo": "Passivo"},
 }
 
-def risolvi_spiaco(nome):
-    nome_pulito = nome.strip().lower()
-    if nome_pulito in MAPPATURA_SPIACO:
-        return MAPPATURA_SPIACO[nome_pulito]
-    for chiave, codice in MAPPATURA_SPIACO.items():
-        if chiave in nome_pulito or nome_pulito in chiave:
-            return codice
-    return "00.00.000"
+# Generatori di dati casuali per variare le scritture
+NOMI_FORNITORI = ["FORNITORE ALFA S.P.A.", "LOGISTICA BETA SRL", "ENERGIA GAMMA SPA", "TELECOM DELTA SRL"]
+NOMI_CLIENTI = ["CLIENTE ROSSI SRL", "DISTRIBUZIONE BIANCHI", "IMPORT EXPORT VERDI", "SERVIZI NERI SPA"]
+DESCRIZIONI_SPEDIZIONI = ["Spedizione merci", "Trasporto nazionale", "Corriere espresso"]
+DESCRIZIONI_UTENZE = ["Bolletta Elettricità", "Gas metano", "Fibra ottica mensile"]
+
+scritture = []
+id_scrittura = 1
+
+def aggiungi_riga(data, dare_avere, codice, descrizione, importo, ref_scrittura, desc_op):
+    global id_scrittura
+    # Se è una nuova operazione, incrementiamo ID o usiamo ref
+    if ref_scrittura: id = ref_scrittura
+    else: 
+        id = id_scrittura
+        id_scrittura += 1
+    
+    # Determina se dare o avere in base al tipo di conto e al lato (semplificato per CSV)
+    # Nel CSV finale avremo colonne: Data, Dare/Avere, Codice, Descrizione, Importo, Rif
+    
+    dare = importo if dare_avere == "DARE" else 0.00
+    avere = importo if dare_avere == "AVERE" else 0.00
+    
+    scritture.append([data, dare_avere, codice, descrizione, dare, avere, desc_op, id])
 
 # ==============================================================================
-# 2. PARSING PDF (regex adattata al formato del manuale Toriello)
+# GENERATORE DI SCRITTURE (LOOP SIMULAZIONE ANNO)
 # ==============================================================================
-def estrai_scritture(pdf_file):
-    entries = []
-    with pdfplumber.open(pdf_file) as pdf:
-        for page in pdf.pages:
-            text = page.extract_text()
-            if not text: continue
-            
-            # Cerca blocchi che iniziano con "Data" o conti seguiti da importi
-            # Pattern: [Data] [Conto Dare] a [Conto Avere] [Importo] \n [Conto] [Importo] ...
-            lines = [l.strip() for l in text.split('\n') if l.strip()]
-            
-            i = 0
-            while i < len(lines):
-                line = lines[i]
-                # Riconosce inizio scrittura: "Data ... a ..." oppure "Diversi a ..." oppure "X a Y ..."
-                if re.match(r'^(data\s+)?[a-zàèéìòù ]+\s+a\s+[a-zàèéìòù ]+', line, re.IGNORECASE) or \
-                   re.match(r'^diversi a ', line, re.IGNORECASE):
-                    
-                    # Estrae la descrizione della data/operazione
-                    descrizione = re.sub(r'^(data\s+)?', '', line).split(' a ')[0].strip()
-                    parti = line.split(' a ')
-                    dare_conto = parti[0].strip()
-                    avere_conto_e_importo = parti[1].strip()
-                    
-                    dare_righe = []
-                    avere_righe = []
-                    
-                    # Prima riga Dare (se non è "Diversi")
-                    if dare_conto.lower() != "diversi":
-                        dare_righe.append(dare_conto)
-                    
-                    # Prima riga Avere + eventuale importo inline
-                    match_imp = re.search(r'([\d\.]+,\d{2})$', avere_conto_e_importo)
-                    if match_imp:
-                        importo = Decimal(match_imp.group(1).replace('.', '').replace(',', '.'))
-                        avere_righe.append((avere_conto_e_importo[:match_imp.start()].strip(), importo))
-                    else:
-                        avere_righe.append(avere_conto_e_importo)
-                    
-                    # Raccoglie le righe successive fino a una riga vuota o nuova "Data" o "Nota"
-                    i += 1
-                    while i < len(lines):
-                        r = lines[i]
-                        if not r or r.lower().startswith(('data ', 'nota ', 'emessa ', 'pagata ', 'incassata ')):
-                            break
-                        # Se la riga contiene un importo italiano
-                        m = re.search(r'([\d\.]+,\d{2})$', r)
-                        if m:
-                            imp = Decimal(m.group(1).replace('.', '').replace(',', '.'))
-                            nome_conto = r[:m.start()].strip()
-                            # Logica semplice: se il primo importo era in Avere, i successivi sono alternati o tutti Avere
-                            # Nel manuale, dopo "X a Y Importo", le righe successive sono i dettagli di Y (Avere)
-                            avere_righe.append((nome_conto, imp))
-                        i += 1
-                    
-                    entries.append({
-                        "descrizione": descrizione,
-                        "dare": dare_righe,
-                        "avere": avere_righe
-                    })
-                i += 1
-    return entries
 
-def costruisci_tabella(entries):
-    rows = []
-    for idx, e in enumerate(entries, 1):
-        dare_total = Decimal('0')
-        avere_total = Decimal('0')
-        
-        for c in e["dare"]:
-            rows.append({"Nr": idx, "Tipo": "DARE", "Conto Manuale": c, "Codice SPIACO": risolvi_spiaco(c), "Importo": 0})
-            
-        for nome, imp in e["avere"]:
-            rows.append({"Nr": idx, "Tipo": "AVERE", "Conto Manuale": nome, "Codice SPIACO": risolvi_spiaco(nome), "Importo": imp})
-            avere_total += imp
-            
-    return pd.DataFrame(rows)
+# 1. ACQUISTI MERCI (Frequenza: ~200)
+data_base = datetime.date(2024, 1, 15)
+for i in range(150):
+    dt = data_base + datetime.timedelta(days=i*2)
+    importo_netto = round(random.uniform(500, 5000), 2)
+    importo_iva = round(importo_netto * 0.22, 2)
+    importo_tot = importo_netto + importo_iva
+    forn = random.choice(NOMI_FORNITORI)
+    rif = f"FATT.{2000+i} DEL {dt.strftime('%d/%m')}"
+    
+    # Contropartita Fornitore (Avere)
+    aggiungi_riga(dt, "AVERE", SPIACO["FORNITORI"]["codice"], f"{SPIACO['FORNITORI']['descrizione']} - {forn}", importo_tot, None, f"Ricevuta {rif}")
+    # Conto Costo (Dare)
+    aggiungi_riga(dt, "DARE", SPIACO["MERCI_ACQ"]["codice"], SPIACO["MERCI_ACQ"]["descrizione"], importo_netto, rif, "Acquisto Merci")
+    # IVA Credito (Dare)
+    aggiungi_riga(dt, "DARE", SPIACO["ERARIO_IVA_CRED"]["codice"], SPIACO["ERARIO_IVA_CRED"]["descrizione"], importo_iva, rif, "IVA Acquisti")
+
+# 2. VENDITE MERCI (Frequenza: ~200)
+for i in range(150):
+    dt = data_base + datetime.timedelta(days=i*2 + 5)
+    importo_netto = round(random.uniform(1000, 8000), 2)
+    importo_iva = round(importo_netto * 0.22, 2)
+    importo_tot = importo_netto + importo_iva
+    cli = random.choice(NOMI_CLIENTI)
+    rif = f"FATT.V/{1000+i}"
+    
+    # Contropartita Cliente (Dare)
+    aggiungi_riga(dt, "DARE", SPIACO["CLIENTI"]["codice"], f"{SPIACO['CLIENTI']['descrizione']} - {cli}", importo_tot, None, f"Emissione {rif}")
+    # Conto Ricavo (Avere)
+    aggiungi_riga(dt, "AVERE", SPIACO["MERCI_VEND"]["codice"], SPIACO["MERCI_VEND"]["descrizione"], importo_netto, rif, "Vendita Merci")
+    # IVA Debito (Avere)
+    aggiungi_riga(dt, "AVERE", SPIACO["ERARIO_IVA_DEB"]["codice"], SPIACO["ERARIO_IVA_DEB"]["descrizione"], importo_iva, rif, "IVA Vendite")
+
+# 3. SPESE DI SERVIZIO E ACQUISTI VARI (Frequenza: ~100)
+servizi = [
+    {"codice": "SPESE_TEL", "desc": "Bolletta Telefonica"},
+    {"codice": "SPESE_TRASPORTO", "desc": "Spedizione Corriere"},
+    {"codice": "MANUTENZIONI", "desc": "Riparazione Macchinario"}
+]
+
+for i in range(100):
+    dt = data_base + datetime.timedelta(days=i*3)
+    serv = random.choice(servizi)
+    importo = round(random.uniform(100, 1000), 2)
+    iva = round(importo * 0.22, 2)
+    tot = importo + iva
+    rif = f"SPESA/{i}"
+    
+    aggiungi_riga(dt, "AVERE", SPIACO["BANCA"]["codice"], SPIACO["BANCA"]["descrizione"], tot, None, f"Pagamento {serv['desc']}")
+    aggiungi_riga(dt, "DARE", SPIACO[serv["codice"]]["codice"], SPIACO[serv["codice"]]["descrizione"], importo, rif, serv["desc"])
+    aggiungi_riga(dt, "DARE", SPIACO["ERARIO_IVA_CRED"]["codice"], SPIACO["ERARIO_IVA_CRED"]["descrizione"], iva, rif, "IVA Servizio")
+
+# 4. INCASSI E PAGAMENTI (Frequenza: ~150)
+for i in range(100):
+    # Pagamento Fornitore
+    dt = data_base + datetime.timedelta(days=i*4)
+    importo = round(random.uniform(1000, 5000), 2)
+    rif = f"PAG.FOR.{i}"
+    aggiungi_riga(dt, "DARE", SPIACO["FORNITORI"]["codice"], SPIACO["FORNITORI"]["descrizione"], importo, None, f"Saldo fornitore {rif}")
+    aggiungi_riga(dt, "AVERE", SPIACO["BANCA"]["codice"], SPIACO["BANCA"]["descrizione"], importo, rif, "Pagamento Banca")
+
+for i in range(50):
+    # Incasso Cliente
+    dt = data_base + datetime.timedelta(days=i*5 + 10)
+    importo = round(random.uniform(2000, 10000), 2)
+    rif = f"INC.CLI.{i}"
+    aggiungi_riga(dt, "DARE", SPIACO["BANCA"]["codice"], SPIACO["BANCA"]["descrizione"], importo, None, f"Ricevuto da cliente {rif}")
+    aggiungi_riga(dt, "AVERE", SPIACO["CLIENTI"]["codice"], SPIACO["CLIENTI"]["descrizione"], importo, rif, "Incasso Banca")
+
+# 5. CHIUSURE E ASSESTAMENTI (Stipendi, Ammortamenti, TFR) - ~50
+
+# Stipendi (Mensili)
+for mese in range(1, 13):
+    dt = datetime.date(2024, mese, 27)
+    lordo = 30000.00
+    netto = 22000.00
+    ritenute = 8000.00
+    
+    rif = f"BUSTA.PAGA.{mese}"
+    aggiungi_riga(dt, "DARE", SPIACO["SALARI"]["codice"], SPIACO["SALARI"]["descrizione"], lordo, None, f"Competenza Stipendio {mese}")
+    aggiungi_riga(dt, "DARE", SPIACO["ONERI_SOCIALI"]["codice"], SPIACO["ONERI_SOCIALI"]["descrizione"], 10000.00, None, f"Oneri Azienda {mese}")
+    aggiungi_riga(dt, "AVERE", SPIACO["DEBITI_DIVERSI"]["codice"], "DEBITI VS DIPENDENTI", netto, rif, "Netto a pagare")
+    aggiungi_riga(dt, "AVERE", SPIACO["ERARIO_IRES"]["codice"], "ERARIO C/RITENUTE LAVORO DIP.", 5000.00, rif, "Ritenute Irpef")
+    aggiungi_riga(dt, "AVERE", SPIACO["ONERI_SOCIALI"]["codice"], "ONERI INPS DIPENDENTE", 3000.00, rif, "INPS a carico dip.")
+
+# TFR (Annuale)
+aggiungi_riga(datetime.date(2024, 12, 31), "DARE", "79.05.001", "ACC.TO FONDO TFR", 3500.00, "TFR.ANN", "Accantonamento TFR")
+aggiungi_riga(datetime.date(2024, 12, 31), "AVERE", SPIACO["FONDO_TFR"]["codice"], SPIACO["FONDO_TFR"]["descrizione"], 3500.00, "TFR.ANN", "Fondo TFR")
+
+# Ammortamenti (Annuale)
+aggiungi_riga(datetime.date(2024, 12, 31), "DARE", SPIACO["AMMORTAMENTO_AUTO"]["codice"], SPIACO["AMMORTAMENTO_AUTO"]["descrizione"], 4500.00, "AMM.AUTO", "Ammortamento Auto")
+aggiungi_riga(datetime.date(2024, 12, 31), "AVERE", SPIACO["FONDO_AMM_AUTO"]["codice"], SPIACO["FONDO_AMM_AUTO"]["descrizione"], 4500.00, "AMM.AUTO", "Fondo Amm. Auto")
+
+aggiungi_riga(datetime.date(2024, 12, 31), "DARE", SPIACO["AMMORTAMENTO_PC"]["codice"], SPIACO["AMMORTAMENTO_PC"]["descrizione"], 800.00, "AMM.PC", "Ammortamento PC")
+aggiungi_riga(datetime.date(2024, 12, 31), "AVERE", SPIACO["FONDO_AMM_PC"]["codice"], SPIACO["FONDO_AMM_PC"]["descrizione"], 800.00, "AMM.PC", "Fondo Amm. PC")
+
+# Liquidazione IVA Trimestrale (Esempio Q4)
+aggiungi_riga(datetime.date(2024, 12, 31), "DARE", SPIACO["ERARIO_IVA_DEB"]["codice"], SPIACO["ERARIO_IVA_DEB"]["descrizione"], 15000.00, "LIQ.IVA", "Giroconto IVA Vendite")
+aggiungi_riga(datetime.date(2024, 12, 31), "AVERE", SPIACO["ERARIO_IVA_CRED"]["codice"], SPIACO["ERARIO_IVA_CRED"]["descrizione"], 15000.00, "LIQ.IVA", "Giroconto IVA Acquisti")
+
 
 # ==============================================================================
-# 3. INTERFACCIA STREAMLIT
+# SALVATAGGIO SU CSV
 # ==============================================================================
-with st.sidebar:
-    st.header("📤 Caricamento PDF")
-    manuale = st.file_uploader("1. Manuale Partita Doppia", type="pdf")
-    spiaco = st.file_uploader("2. Piano SPIACO (opzionale)", type="pdf")
-    processa = st.button("🔍 Estrai e Mappa", type="primary")
+filename = "600_Scritture_SPIACO.csv"
+with open(filename, mode='w', newline='', encoding='utf-8-sig') as f:
+    writer = csv.writer(f, delimiter=';')
+    writer.writerow([
+        "Data", "Dare_Avere", "Codice_SPIACO", "Descrizione_Conto", 
+        "Importo_Dare", "Importo_Avere", "Riferimento", "Descrizione_Operazione"
+    ])
+    for riga in sorted(scritture, key=lambda x: (x[7], x[0])): # Ordina per ID scrittura e Data
+        writer.writerow(riga)
 
-if processa and manuale:
-    with st.spinner("📖 Lettura PDF e riconoscimento scritture..."):
-        try:
-            entries = estrai_scritture(manuale)
-            if not entries:
-                st.warning("⚠️ Nessuna scrittura automatica trovata. Il formato PDF potrebbe richiedere un parser specifico. Controlla il manuale.")
-            else:
-                df = costruisci_tabella(entries)
-                st.success(f"✅ Trovate {len(entries)} scritture contabili")
-                
-                st.subheader("📊 Anteprima Scritture")
-                st.dataframe(df, use_container_width=True, height=400)
-                
-                # Validazione
-                st.subheader("🔍 Verifica Quadratura")
-                for nr in df["Nr"].unique():
-                    sub = df[df["Nr"] == nr]
-                    d = sub[sub["Tipo"]=="DARE"]["Importo"].sum()
-                    a = sub[sub["Tipo"]=="AVERE"]["Importo"].sum()
-                    if abs(d - a) > Decimal("0.01"):
-                        st.error(f"❌ Scrittura {nr} NON quadrata: Dare={d:.2f} ≠ Avere={a:.2f}")
-                    else:
-                        st.success(f"✅ Scrittura {nr} quadrata: {d:.2f}")
-                        
-                # Export
-                csv = df.to_csv(index=False, sep=";").encode('utf-8')
-                st.download_button("📥 Scarica CSV", data=csv, file_name="scritture_spiaco.csv", mime="text/csv")
-        except Exception as ex:
-            st.error(f"🚨 Errore durante l'elaborazione: {str(ex)}")
-else:
-    st.info("👈 Carica il PDF del Manuale nella sidebar e premi 'Estrai e Mappa'.")
+print(f"✅ Creato con successo: {filename}")
+print(f"📊 Totale righe generate: {len(scritture)}")
