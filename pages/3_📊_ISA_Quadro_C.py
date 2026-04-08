@@ -62,14 +62,9 @@ def parse_modello(pdf_path):
             break
     
     # 🎯 STRATEGIA MIGLIORATA: Per ogni codice C##, cerca nel testo e cattura TUTTO ciò che segue
-    # fino al prossimo codice o interruzione
-    
-    # Lista di tutti i codici possibili
     all_codes = [f"C{i:02d}" for i in range(1, 44)]
     
     for code in all_codes:
-        # Pattern: cerca il codice seguito da qualsiasi testo (anche su più righe)
-        # Si ferma quando trova un altro codice C## o parole chiave di sezione
         pattern = rf'{re.escape(code)}\s*([-:]?)\s*([\s\S]*?)(?=\n\s*C\d{{2}}\s|Sezione\s*\d|TIPOLOGIA|MODALITÀ|Percentuale\s*sui\s*ricavi|TOT\s*=|AMBITO|AREA\s*DI|PRODUZIONE|\Z)'
         
         match = re.search(pattern, text_content, re.IGNORECASE)
@@ -77,29 +72,21 @@ def parse_modello(pdf_path):
             description = match.group(2).strip()
             
             # Pulizia avanzata del testo
-            # Rimuovi righe vuote, simboli %, numeri isolati
             lines = description.split('\n')
             clean_lines = []
             for line in lines:
                 line = line.strip()
-                # Ignora righe che sono solo %, numeri, o separatori
-                if not line:
-                    continue
-                if re.match(r'^[%\d\s,.\-()|]+$', line):
-                    continue
-                if len(line) < 3:
-                    continue
-                # Ignora header ripetuti
-                if any(kw in line.upper() for kw in ['RICAVI', 'PERCENTUALE', 'CAMPO', 'NUMERO']):
-                    continue
+                if not line: continue
+                if re.match(r'^[%\d\s,.\-()|]+$', line): continue
+                if len(line) < 3: continue
+                if any(kw in line.upper() for kw in ['RICAVI', 'PERCENTUALE', 'CAMPO', 'NUMERO']): continue
                 clean_lines.append(line)
             
             description = ' '.join(clean_lines)
-            description = re.sub(r'\s+', ' ', description)  # Normalizza spazi
-            description = re.sub(r'[\|\-]', ' ', description)  # Rimuovi separatori
+            description = re.sub(r'\s+', ' ', description)
+            description = re.sub(r'[\|\-]', ' ', description)
             description = description.strip(".,;:()")
             
-            # Salva solo se la descrizione è significativa
             if len(description) >= 10:
                 result["campi"][code]["descrizione"] = description
                 result["campi"][code]["estratto_da_pdf"] = True
@@ -118,6 +105,7 @@ def parse_modello(pdf_path):
             result["vincoli_modello"].append("C37+C38+C39+C40 = 100% (Area svolgimento)")
     
     return result
+
 # =============================================================================
 # PARSER ISTRUZIONI: estrae REGOLE e VINCOLI di compilazione
 # =============================================================================
@@ -135,7 +123,6 @@ def parse_istruzioni(pdf_path):
             if extracted:
                 text_content += extracted + "\n"
     
-    # Estrai vincoli espliciti
     constraint_patterns = [
         r'Il totale.*?percentuali.*?(C\d+).*?(C\d+).*?100',
         r'totale.*?pari a 100',
@@ -143,9 +130,8 @@ def parse_istruzioni(pdf_path):
     ]
     for pattern in constraint_patterns:
         for match in re.finditer(pattern, text_content, re.IGNORECASE):
-            result["vincoli_istruzioni"].append(f"Somma percentuali = 100%")
+            result["vincoli_istruzioni"].append("Somma percentuali = 100%")
     
-    # Estrai note su ambiguità
     ambiguity_patterns = [
         r'(?:Ad esempio|Si precisa|Nell\'ambito).*?(riqualificazione|manutenzione|ristrutturazione|nuova costruzione).*?(?=\n\n|\.)',
         r'(?:attenzione|verificare|non confondere).*?(subappalto|reverse charge|split payment)',
@@ -156,7 +142,6 @@ def parse_istruzioni(pdf_path):
             if len(note) < 250:
                 result["ambiguita_comuni"].append(note)
     
-    # Aggiungi ambiguità specifiche
     if "EG75U" in text_content:
         result["ambiguita_comuni"].extend([
             "⚠️ CRITICO: Distinguere manutenzione (C27) da riqualificazione/recupero (C43) - C27 = ripristino funzionalità esistente, C43 = miglioramento prestazionale (art.3 DPR 380/2001)",
@@ -173,7 +158,7 @@ def parse_istruzioni(pdf_path):
     return result
 
 # =============================================================================
-# GENERATORE PROMPT DINAMICO (VERSIONE ANALITICA COMPLETA)
+# GENERATORE PROMPT DINAMICO (VERSIONE CORRETTA E COMPLETA)
 # =============================================================================
 def generate_dynamic_prompt(modello_data, istruzioni_data, general_rules=GENERAL_RULES):
     isa_code = modello_data.get("isa_code") or istruzioni_data.get("isa_code", "UNKNOWN")
@@ -183,6 +168,10 @@ def generate_dynamic_prompt(modello_data, istruzioni_data, general_rules=GENERAL
 Ruolo: Agisci come un Consulente Fiscale Senior specializzato in ISA (Indici Sintetici di Affidabilità Fiscale), con competenza specifica sul codice attività {isa_code}.
 Obiettivo: Compilare con precisione assoluta il Quadro C – Elementi specifici dell'attività del modello {isa_code} per il periodo d'imposta 2025.
 
+⚠️ METODOLOGIA DI LAVORO OBBLIGATORIA (3 FASI)
+NON procedere direttamente alla compilazione. Devi seguire tassativamente queste 3 fasi in ordine:
+FASE 1: ANALISI ESPLORATIVA DEI DOCUMENTI ALLEGATI
+FASE 2: PROPOSTA DI MAPPATURA (Dizionario Descrizioni → Campi C)
 FASE 3: COMPILAZIONE FINALE E VALIDAZIONE
 
 ⛔ ISTRUZIONE OPERATIVA CRITICA (DA SEGUIRE ALLA LETTERA)
@@ -198,8 +187,6 @@ Se il modello salta fatture, fa medie approssimative o raggruppa a priori, l'out
 Devi dimostrare di aver letto ogni riga prima di compilare la tabella finale.
 
 {general_rules}
-
-📋 CAMPI QUADRO C (estratti dal MODELLO {isa_code})
 
 📋 CAMPI QUADRO C (estratti dal MODELLO {isa_code})
 """
@@ -228,26 +215,19 @@ Devi dimostrare di aver letto ogni riga prima di compilare la tabella finale.
 Prima di classificare, devi analizzare il contenuto dei file allegati e produrre le seguenti tabelle:
 
 1.1 ANALISI FREQUENZA DESCRIZIONI FATTURE
-Estrai tutte le descrizioni dalle fatture allegate. Raggruppa le descrizioni simili (es. "sostituzione caldaia", "cambio caldaia", "sostituzione generatore termico" → stesso gruppo).
+Estrai tutte le descrizioni dalle fatture allegate. Raggruppa le descrizioni simili.
 Crea una tabella con:
 | Descrizione Ricorrente | Varianti Trovate | N. Fatture | Imponibile Totale | % sul Totale |
 |------------------------|------------------|------------|-----------------|--------------|
-| es. Sostituzione Caldaia | "cambio caldaia", "sostituzione generatore" | 15 | € 45.000 | 12% |
-| es. Riparazione Guasti | "riparazione", "intervento urgente", "pronto intervento" | 23 | € 18.000 | 5% |
 
 1.2 ANALISI LOCALIZZAZIONE GEOGRAFICA
 Se il Quadro C richiede dati territoriali (es. C36-C40 per EG75U), estrai TUTTI i comuni indicati nelle fatture:
-| Comune | N. Fatture | Imponibile Totale | % sul Totale | Note (es. "cantiere esplicito" vs "solo sede committente") |
-|--------|------------|-----------------|--------------|-----------------------------------------------------------|
-| Milano | 45 | € 200.000 | 60% | Cantiere esplicito in 30 fatture |
-| Roma | 12 | € 50.000 | 15% | Solo sede committente (ambiguo) |
+| Comune | N. Fatture | Imponibile Totale | % sul Totale | Note |
+|--------|------------|-----------------|--------------|------|
 
 1.3 ANALISI REGIMI IVA SPECIALI
 | Regime | N. Fatture | Imponibile Totale | Riferimento Normativo Trovato |
 |--------|------------|-----------------|-------------------------------|
-| Split Payment | 5 | € 80.000 | Art.17-ter, "scissione pagamenti" |
-| Reverse Charge | 8 | € 120.000 | Art.17 c.6, "N6.3" |
-| Ritenuta Acconto | 10 | € 45.000 | Art.25 D.L. 78/2010, "bonifico parlante" |
 
 🗺️ FASE 2: PROPOSTA DI MAPPATURA (Dizionario Descrizioni → Campi C)
 PRIMA di compilare i valori, devi proporre esplicitamente come intendi classificare ogni gruppo di descrizioni nella FASE 1.
@@ -255,18 +235,14 @@ PRIMA di compilare i valori, devi proporre esplicitamente come intendi classific
 Per ogni "Descrizione Ricorrente" identificata nella Fase 1.1, indica:
 | Descrizione Ricorrente | Campo Quadro C Proposto | Motivazione della Classificazione | Livello di Certezza |
 |------------------------|------------------------|-----------------------------------|---------------------|
-| Sostituzione Caldaia | C27 (Manutenzione) | Intervento su impianto esistente senza miglioramento prestazionale | ALTA |
-| Installazione Nuovo Impianto | C26 (Installazione) | Impianto ex-novo in edificio di nuova costruzione | ALTA |
-| Ristrutturazione Bagno | C43 (Riqualificazione) | Rientra in art.3 DPR 380/2001 lett. c) | MEDIA (verificare titolo edilizio) |
 
-⚠️ Se una descrizione potrebbe appartenere a più campi (es. "lavori idraulici" generico), segnala come "INCERTA" e proponi l'ipotesi più prudente specificando cosa servirebbe per certezza.
+⚠️ Se una descrizione potrebbe appartenere a più campi, segnala come "INCERTA" e proponi l'ipotesi più prudente.
 
 📊 FASE 3: COMPILAZIONE FINALE E VALIDAZIONE (ESECUZIONE OBBLIGATORIA)
 ⛔ PROTOCOLLO SEQUENZIALE FATTURA PER FATTURA:
-È SEVERAMENTE VIETATO fare stime, campionature o raggruppamenti preventivi. Devi seguire tassativamente questi passi:
 1. SCANSIONE LINEARE: Leggi OGNI fattura dalla prima all'ultima pagina. Non saltarne nessuna.
 2. ASSEGNAZIONE SINGOLA: Per ogni fattura, leggi la descrizione INTERA e assegnala a UNO solo campo C##.
-3. REGISTRO VISIBILE: Mostra esplicitamente le prime 25 fatture processate in una tabella per dimostrare il lavoro svolto.
+3. REGISTRO VISIBILE: Mostra esplicitamente le prime 25 fatture processate in una tabella.
 4. AGGREGAZIONE: SOLO dopo aver classificato TUTTE le fatture, calcola i totali e le percentuali.
 
 📋 FORMATO OUTPUT RICHIESTO (RISPETTALO ALLA LETTERA):
@@ -282,18 +258,14 @@ Per ogni "Descrizione Ricorrente" identificata nella Fase 1.1, indica:
 | Campo | Descrizione | Imponibile Totale € | % sui Ricavi | N. Fatture |
 |-------|-------------|---------------------|--------------|------------|
 | C01 | ... | 0,00 | 0% | 0 |
-| C02 | ... | 0,00 | 0% | 0 |
 ...
-| C25 | ... | 0,00 | 0% | 0 |
 | TOT C01-C25 | | [IMPORTO] | 100,0% ✅ | [NUM] |
-(...ripeti identica struttura per Tipologia Servizio C26-C30, Area C37-C40, Ambito C41-C43)
 
 3️⃣ GIUSTIFICAZIONE ANALITICA OBBLIGATORIA
 Per OGNI campo C## con valore >0%, elenca TUTTE le fatture che lo compongono:
 [C27 - Manutenzione | 45% | € 225.000 | 67 fatture]
 - Fatt. 102 del 15/01 - € 5.000 - "Sostituzione caldaia..."
-- Fatt. 115 del 22/02 - € 8.500 - "Riparazione impianto..."
-(...elenca TUTTE le 67 fatture assegnate a questo campo)
+(...elenca TUTTE le fatture assegnate a questo campo)
 
 4️⃣ SEGNALAZIONE CRITICITÀ (Template Obbligatorio)
 [CRITICITÀ - PRIORITÀ: ALTA/MEDIA/BASSA]
@@ -301,7 +273,6 @@ Fattura N. [XXX] del [DD-MM-YYYY]
 Problema: [descrizione breve]
 Classificazione adottata: [campo C##] + [motivazione tecnica]
 Dati mancanti per certezza: [cosa servirebbe]
-Raccomandazione: [verificare con cliente / chiedere documentazione]
 
 5️⃣ CHECKLIST PRE-INVIO (DICHIARA ESPLICITAMENTE)
 - [ ] Tutte le fatture allegate sono state lette e classificate (nessuna esclusa)
@@ -309,56 +280,15 @@ Raccomandazione: [verificare con cliente / chiedere documentazione]
 - [ ] Somma C26+...+C30 = [X]% (Target: 100% ±0,1%) ✅/❌
 - [ ] Somma C37+...+C40 = [X]% (Target: 100% ±0,1%) ✅/❌
 - [ ] Somma C41+C42+C43 = [X]% (Target: 100% ±0,1%) ✅/❌
-- [ ] Note di credito applicate come storni negativi (non nuovi ricavi)
+- [ ] Note di credito applicate come storni negativi
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
 💡 ISTRUZIONE FINALE DI SAFETY:
- Se una fattura presenta anche solo un dubbio ragionevole su classificazione...
-            
-📝 FORMATO OUTPUT OBBLIGATORIO (STRUTTURA DA SEGUIRE)
-Per assicurarmi che il lavoro sia completo, il tuo output finale DEVE seguire ESATTAMENTE questo schema...
-            
-         ──────────────────────────────────────────────────────
-            1. REGISTRO FATTURE (Esempio prime 10)
-            ──────────────────────────────────────────────────────
-            | N. Fattura | Data | Imponibile € | Campo C## | Descrizione Sintetica |
-            |------------|------|--------------|-----------|-----------------------|
-            | ... | ... | ... | ... | ... |
-            
-            ──────────────────────────────────────────────────────
-            2. TABELLA RIEPILOGATIVA QUADRO C (Specializzazione C01-C25)
-            ──────────────────────────────────────────────────────
-            | Campo | Descrizione | Imponibile Totale € | % | N. Fatture |
-            |-------|-------------|---------------------|---|------------|
-            | C01   | ...         | 0,00                | 0%| 0          |
-            ...
-            | TOT   |             | XXXXXX              |100%| XXX        |
-            
-            ──────────────────────────────────────────────────────
-            3. TABELLA RIEPILOGATIVA QUADRO C (Tipologia Servizio C26-C30)
-            ──────────────────────────────────────────────────────
-            (Stessa struttura di sopra, deve sommare 100%)
-            
-            ──────────────────────────────────────────────────────
-            4. GIUSTIFICAZIONE ANALITICA (Per ogni campo compilato)
-            ──────────────────────────────────────────────────────
-            [C## - Descrizione Campo: XX% | € Totale]
-            - Fatt. Nr. XXX del GG/MM - € Importo - "Descrizione breve"
-            - Fatt. Nr. YYY del GG/MM - € Importo - "Descrizione breve"
-            ...
-            
-            ──────────────────────────────────────────────────────
-            5. CRITICITÀ E CHECKLIST
-            ──────────────────────────────────────────────────────
-            [CRITICITÀ 1] ...
-            [CHECKLIST]
-            - [ ] Tutte le fatture lette? SI/NO
-            - [ ] Somma C01-C25 = 100%? SI/NO
-            - [ ] Somma C26-C30 = 100%? SI/NO
-            
- """
-        
- return prompt
+Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
+"""
+    
+    return prompt
+
 # =============================================================================
 # INTERFACCIA STREAMLIT
 # =============================================================================
