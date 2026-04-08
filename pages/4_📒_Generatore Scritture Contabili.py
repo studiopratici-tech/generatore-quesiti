@@ -1,251 +1,209 @@
 import streamlit as st
 import pandas as pd
+import pdfplumber
 import re
+from datetime import datetime
+import unicodedata
 
-st.set_page_config(layout="wide", page_title="Assistente Contabile Ranocchi")
+st.set_page_config(layout="wide", page_title="Assistente Contabile Ranocchi | Studio Pratici")
 
 # ==============================================================================
-# 1. DATI COMPLETI (Estratti dal tuo PDF)
+# 1. CONFIGURAZIONE & SINONIMI PER LA RICERCA
 # ==============================================================================
-# Copio direttamente il testo del tuo file qui dentro per l'elaborazione
-PDF_TEXT_RAW = """
-01.01.001 SOCI C/SOTTOSCRIZIONE Patrimoniale attivo
-01.01.021 SOCI C/DECIMI RICHIAMATI Patrimoniale attivo
-04.01.009 SPESE DI COSTITUZIONE Patrimoniale attivo
-04.09.001 AVVIAMENTO Patrimoniale attivo
-13.03.001 FABBRICATI CIVILI Patrimoniale attivo
-13.09.001 AUTOVETTURE Patrimoniale attivo
-13.09.065 COMPUTER ED ACCESSORI Patrimoniale attivo
-16.01.005 F.DO AMM.TO FABBRICATI CIVILI Patrimoniale passivo
-16.07.001 F.DO AMM.TO AUTOVETTURE Patrimoniale passivo
-16.07.045 F.DO AMM.TO COMPUTER ED ACCESSORI Patrimoniale passivo
-28.01.001 CLIENTE Patrimoniale attivo
-28.11.009 CREDITO IVA Patrimoniale attivo
-34.01.001 BANCA C/C A Patrimoniale attivo
-40.01.001 CAPITALE SOCIALE Patrimoniale passivo
-49.13.001 FORNITORE Patrimoniale passivo
-49.23.009 ERARIO C/IVA Patrimoniale passivo
-49.23.029 ERARIO C/RIT. FISCALI LAVOR. DIPENDENTI Patrimoniale passivo
-49.25.001 DEBITO V./ INPS LAVORO DIPENDENTE Patrimoniale passivo
-49.27.025 DIPENDENTI C/RETRIBUZIONI Patrimoniale passivo
-60.01.009 MERCI C/VENDITE Economico ricavi
-73.01.013 MERCI C/ACQUISTI Economico costi
-73.09.006 CARBUR. E LUBR. Economico costi
-75.01.025 ENERGIA ELETTRICA Economico costi
-75.05.105 MANUT. AUTOVETTURE Economico costi
-75.11.002 CONSULENZE Economico costi
-75.11.017 COMPENSI AMMINISTRATORE Economico costi
-75.13.037 SPESE DI PUBBLICITA' Economico costi
-79.01.005 STIPENDI IMPIEGATI Economico costi
-79.03.001 ONERI INPS Economico costi
-83.09.001 AMM.TO AUTOVETTURE Economico costi
-92.01.005 IMU Economico costi
-96.01.001 IRES Economico costi
-""" 
-# Nota: Ho inserito solo una parte per brevità nel codice, ma la logica sotto processa 
-# tutto il testo che hai incollato nella Knowledge Base.
+SYNONYMS = {
+    "luce": ["energia", "elettrica", "illuminazione", "bolletta", "utenza"],
+    "auto": ["autovettura", "veicolo", "macchina", "automobile", "car", "macchinario"],
+    "manutenzione": ["manut", "riparazione", "riparaz", "guasto", "assistenza", "tagliando"],
+    "telefono": ["telefonia", "telefono", "cellulare", "mobile", "fisso", "voip", "sim"],
+    "affitto": ["locazione", "canone", "fitto", "affitto", "noleggio"],
+    "commercialista": ["consulenza", "amministrazione", "contabilità", "ragioniere", "commercialista", "tenuta"],
+    "tasse": ["imu", "tassa", "bollo", "imposta", "tributo", "cciaa", "registro"],
+    "stipendio": ["personale", "dipendente", "salario", "retribuzione", "busta paga", "operaio", "impiegato"],
+    "computer": ["pc", "informatica", "hardware", "software", "notebook", "server", "macchina ufficio"],
+    "benzina": ["carburante", "carbur", "gasolio", "benzina", "lubrificante", "rifornimento"],
+    "assicurazione": ["polizza", "rc", "rischio", "copertura", "sinistro"],
+    "banca": ["conto", "bonifico", "c/c", "finanziamento", "mutuo", "interessi passivi"],
+    "iva": ["imposta", "credito", "debito", "liquidazione", "acconto", "split", "reverse"],
+    "cliente": ["fattura attiva", "credito v/clienti", "incasso", "vendita"],
+    "fornitore": ["fattura passiva", "debito v/fornitori", "pagamento", "acquisto"]
+}
 
-# Per questo script, simulo l'intera base dati basandomi sul tuo file PDF completo
-# In produzione, useresti `PDF_TEXT_SOURCE` con tutto il testo incollato.
+# ==============================================================================
+# 2. PARSER PDF ROBUSTO
+# ==============================================================================
 @st.cache_data
-def load_accounts():
-    """
-    Funzione che simula il parsing del PDF completo fornito nel contesto.
-    Struttura: { '01.01.001': {'desc': '...', 'nature': 'Patrimoniale Attivo'} }
-    """
-    # Uso il testo completo fornito nel prompt precedente (Knowledge Base)
-    full_text = """
-    01.01.001 SOCI C/SOTTOSCRIZIONE Patrimoniale attivo
-    01.01.021 SOCI C/DECIMI RICHIAMATI Patrimoniale attivo
-    04.01.009 SPESE DI COSTITUZIONE Patrimoniale attivo
-    13.01.001 TERRENO Patrimoniale attivo
-    13.03.001 FABBRICATI CIVILI Patrimoniale attivo
-    13.09.001 AUTOVETTURE Patrimoniale attivo
-    13.09.065 COMPUTER ED ACCESSORI Patrimoniale attivo
-    16.01.005 F.DO AMM.TO FABBRICATI CIVILI Patrimoniale passivo
-    16.07.001 F.DO AMM.TO AUTOVETTURE Patrimoniale passivo
-    16.07.045 F.DO AMM.TO COMPUTER ED ACCESSORI Patrimoniale passivo
-    28.01.001 CLIENTE Patrimoniale attivo
-    28.11.009 CREDITO IVA Patrimoniale attivo
-    34.01.001 BANCA C/C A Patrimoniale attivo
-    40.01.001 CAPITALE SOCIALE Patrimoniale passivo
-    46.01.001 FONDO T.F.R. Patrimoniale passivo
-    49.13.001 FORNITORE Patrimoniale passivo
-    49.23.009 ERARIO C/IVA Patrimoniale passivo
-    49.23.029 ERARIO C/RIT. FISCALI LAVOR. DIPENDENTI Patrimoniale passivo
-    49.25.001 DEBITO V./ INPS LAVORO DIPENDENTE Patrimoniale passivo
-    49.27.025 DIPENDENTI C/RETRIBUZIONI Patrimoniale passivo
-    60.01.009 MERCI C/VENDITE Economico ricavi
-    73.01.013 MERCI C/ACQUISTI Economico costi
-    73.09.006 CARBUR. E LUBR. Economico costi
-    75.01.025 ENERGIA ELETTRICA Economico costi
-    75.05.105 MANUT. AUTOVETTURE Economico costi
-    75.11.002 CONSULENZE Economico costi
-    75.11.017 COMPENSI AMMINISTRATORE Economico costi
-    75.13.037 SPESE DI PUBBLICITA' Economico costi
-    79.01.005 STIPENDI IMPIEGATI Economico costi
-    79.03.001 ONERI INPS Economico costi
-    83.09.001 AMM.TO AUTOVETTURE Economico costi
-    92.01.005 IMU Economico costi
-    96.01.001 IRES Economico costi
-    """ 
-    # Per rendere il codice funzionante qui, inserisco una selezione rappresentativa.
-    # Il tuo file PDF reale ne ha ~1200. Il codice sotto è pronto a riceverli tutti.
-    
+def parse_piano_conti(pdf_file):
+    """Estrae i conti dal PDF gestendo il formato esatto della stampa Ranocchi"""
     accounts = {}
-    lines = full_text.strip().split('\n')
-    for line in lines:
-        if line.strip():
-            parts = line.split()
-            if len(parts) >= 3:
-                code = parts[0]
-                # Gestione spazi multipli nella descrizione
-                desc = ' '.join(parts[1:-2]) 
-                macro = parts[-2] # Patrimoniale / Economico
-                detail = parts[-1] # attivo / passivo / costi / ricavi
-                
-                accounts[code] = {
-                    'descrizione': desc,
-                    'macro_natura': macro,
-                    'dettaglio_natura': detail,
-                    'full_natura': f"{macro} {detail}"
-                }
+    try:
+        with pdfplumber.open(pdf_file) as pdf:
+            full_text = "\n".join([page.extract_text() or "" for page in pdf.pages])
+        
+        # Pulizia base: rimuove caratteri speciali e normalizza spazi
+        clean_text = re.sub(r'[|\\n\r\t]', ' ', full_text)
+        clean_text = re.sub(r'\s+', ' ', clean_text)
+        
+        # Pattern: 13.09.001 AUTOVETTURE Patrimoniale attivo
+        pattern = r'(\d{2}\.\d{2}\.\d{3})\s+(.*?)\s+(Patrimoniale|Economico|Conto\s+d\'ordine)\s+(attivo|passivo|costi|ricavi)?'
+        
+        for match in re.finditer(pattern, clean_text, re.IGNORECASE):
+            code, desc, macro, detail = match.groups()
+            detail = detail.strip() if detail else ""
+            natura = f"{macro.strip()} {detail}".strip()
+            
+            # Pre-elaborazione per ricerca veloce
+            desc_norm = unicodedata.normalize('NFKD', desc).encode('ASCII', 'ignore').decode().lower()
+            tokens = set(re.sub(r'[^a-z0-9 ]', '', desc_norm).split())
+            
+            accounts[code] = {
+                "desc": desc.strip(),
+                "natura": natura,
+                "macro": macro.strip(),
+                "tokens": tokens
+            }
+    except Exception as e:
+        st.error(f"Errore lettura PDF: {e}")
+        return {}
+        
     return accounts
 
-PIANO_CONTI = load_accounts()
-
 # ==============================================================================
-# 2. MOTORE DI RICERCA "INTELLIGENTE"
+# 3. MOTORE DI RICERCA AVANZATO
 # ==============================================================================
-def search_accounts(query):
-    """Cerca conti basandosi su parole chiave e natura"""
-    if not query:
-        return {}
+def search_accounts(query, accounts_db):
+    if not query or not accounts_db:
+        return []
     
-    query_lower = query.lower()
-    results = {}
-    
-    # Mappatura sinonimi per aiutare il dipendente
-    keywords_map = {
-        'luce': ['energia', 'elettrica'],
-        'auto': ['autovettura', 'veicolo'],
-        'telefono': ['telefonia', 'mobile', 'fissa'],
-        'affitto': ['locazione', 'canone'],
-        'commercialista': ['consulenza', 'amministrazione', 'ragioniere'],
-        'tasse': ['imu', 'tassa', 'bollo'],
-        'stipendio': ['personale', 'dipendente', 'salario'],
-        'computer': ['pc', 'informatica', 'software'],
-        'benzina': ['carburante', 'lubrificante']
-    }
-    
-    # Aggiungi sinonimi alla query
-    search_terms = [query_lower]
-    for term, synonyms in keywords_map.items():
-        if term in query_lower:
-            search_terms.extend(synonyms)
+    q = query.lower().strip()
+    # Espansione query con sinonimi
+    expanded_tokens = set(q.split())
+    for key, syns in SYNONYMS.items():
+        if key in q or any(q.startswith(s[:3]) for s in syns):
+            expanded_tokens.update(syns)
             
-    for code, info in PIANO_CONTI.items():
-        desc_lower = info['descrizione'].lower()
+    results = []
+    for code, info in accounts_db.items():
+        score = 0
         
-        # Logica di ricerca: se una parola della query è nella descrizione
-        if any(term in desc_lower for term in search_terms):
-            results[code] = info
+        # Match esatto codice
+        if q in code:
+            score += 100
+        # Match descrizione esatta o parziale
+        if q in info["desc"].lower():
+            score += 50
+        # Match per token/sinonimi
+        overlap = expanded_tokens & info["tokens"]
+        if overlap:
+            score += len(overlap) * 10
             
-    return results
+        # Boost per corrispondenze parziali forti
+        if any(token in info["desc"].lower() for token in expanded_tokens):
+            score += 5
+            
+        if score > 0:
+            results.append((code, info, score))
+            
+    # Ordina per rilevanza
+    results.sort(key=lambda x: x[2], reverse=True)
+    return [(c, i) for c, i, _ in results[:25]]  # Top 25 risultati
+
+def get_natura_badge(macro):
+    """Restituisce HTML/Markdown per evidenziare la natura contabile"""
+    if "economico" in macro.lower():
+        return "🟠 **Economico**"
+    elif "patrimoniale" in macro.lower():
+        return "🟢 **Patrimoniale**"
+    elif "conto d'ordine" in macro.lower():
+        return "🔵 **Conto d'Ordine**"
+    return "⚪ Altro"
 
 # ==============================================================================
-# 3. INTERFACCIA UTENTE (UI)
+# 4. INTERFACCIA UTENTE
 # ==============================================================================
 def main():
-    st.title("️ Assistente Contabile Intelligente (Ranocchi GIS)")
-    st.markdown("Cerca l'operazione che devi registrare. Il sistema ti mostrerà i conti corretti distinguendo tra **Patrimoniali** e **Economici**.")
-    
-    # 1. BARRA DI RICERCA
-    st.subheader("1. Cosa devi registrare?")
-    query = st.text_input("Scrivi una descrizione (es. 'Bolletta luce', 'Acquisto auto', 'Compenso amministratore')")
-    
-    # 2. RISULTATI RICERCA
-    if query:
-        results = search_accounts(query)
+    st.title("📒 Assistente Contabile Intelligente (Ranocchi GIS)")
+    st.markdown("Cerca un'operazione o una parola chiave. Il sistema troverà i conti corretti distinguendo chiaramente tra **Patrimoniali** e **Economici**.")
+
+    # SIDEBAR: Caricamento PDF
+    with st.sidebar:
+        st.header("📂 Caricamento Piano dei Conti")
+        uploaded_pdf = st.file_uploader("Carica il PDF della stampa Ranocchi", type=["pdf"])
         
-        if results:
-            st.success(f"Trovati {len(results)} conti corrispondenti.")
-            
-            # Organizza i risultati per Natura (Patrimoniale vs Economico)
-            df_results = []
-            for code, info in results.items():
-                is_economic = 'economico' in info['macro_natura'].lower()
-                badge = "🟠 Economico" if is_economic else "🟢 Patrimoniale"
-                color = "#FFA500" if is_economic else "#008000" # Arancione o Verde
-                
-                df_results.append({
-                    "Codice": code,
-                    "Descrizione": info['descrizione'],
-                    "Natura": badge,
-                    "Dettaglio": info['dettaglio_natura']
-                })
-            
-            df = pd.DataFrame(df_results)
-            
-            # Mostra tabella
-            st.dataframe(df, use_container_width=True, hide_index=True)
-            
-            # 3. SELEZIONE CONTI (DARE / AVERE)
-            st.subheader("2. Componi la scrittura")
-            st.info("Seleziona un conto DARE e un conto AVERE dalla ricerca sopra.")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                dare_options = [f"{r['Codice']} - {r['Descrizione']} ({r['Natura']})" for i, r in df.iterrows()]
-                dare_select = st.selectbox("Seleziona Conto DARE (Debito)", [""] + dare_options)
-                
-            with col2:
-                avere_options = [f"{r['Codice']} - {r['Descrizione']} ({r['Natura']})" for i, r in df.iterrows()]
-                avere_select = st.selectbox("Seleziona Conto AVERE (Credito)", [""] + avere_options)
-            
-            # 4. INPUT IMPORTI
-            if dare_select and avere_select:
-                st.subheader("3. Importi")
-                col_imp1, col_imp2 = st.columns(2)
-                
-                with col_imp1:
-                    imp_dare = st.number_input("Importo DARE €", min_value=0.0, step=0.01, format="%.2f")
-                with col_imp2:
-                    imp_avere = st.number_input("Importo AVERE €", min_value=0.0, step=0.01, format="%.2f")
-                    
-                # 5. OUTPUT FINALE
-                if imp_dare > 0 and imp_avere > 0:
-                    st.subheader("✅ Scrittura Generata")
-                    
-                    # Estrai codici puliti
-                    code_dare = dare_select.split(" - ")[0]
-                    code_avere = avere_select.split(" - ")[0]
-                    
-                    # Mostra risultato
-                    st.write("**DARE:**")
-                    st.write(f"`{code_dare}` - {dare_select.split('-')[1].split('(')[0].strip()}")
-                    st.metric("Totale DARE", f"€ {imp_dare:,.2f}")
-                    
-                    st.write("**AVERE:**")
-                    st.write(f"`{code_avere}` - {avere_select.split('-')[1].split('(')[0].strip()}")
-                    st.metric("Totale AVERE", f"€ {imp_avere:,.2f}")
-                    
-                    if abs(imp_dare - imp_avere) < 0.01:
-                        st.success("👍 Scrittura Bilanciata!")
-                    else:
-                        st.error("❌ Scrittura Non Bilanciata!")
-
+        if uploaded_pdf:
+            with st.spinner("🔍 Analisi del PDF in corso..."):
+                piano_conti = parse_piano_conti(uploaded_pdf)
+            if piano_conti:
+                st.success(f"✅ Piano caricato: {len(piano_conti)} conti estratti")
+                st.divider()
+                st.caption("💡 Suggerimento: usa parole come *'luce'*, *'manutenzione'*, *'auto'*, *'stipendi'*")
+            else:
+                st.error("❌ Nessun conto trovato. Verifica che il PDF sia una stampa Ranocchi valida.")
+                st.stop()
         else:
-            st.warning("Nessun conto trovato. Prova con parole chiave più generiche (es. 'Auto' invece di 'Gomme').")
-            
-    else:
-        # Stato iniziale
-        st.info("💡 **Suggerimenti di ricerca:**")
-        cols = st.columns(3)
-        with cols[0]: st.button("Bolletta Luce"); st.button("Acquisto Auto")
-        with cols[1]: st.button("Compenso Amministratore"); st.button("Pagamento Stipendi")
-        with cols[2]: st.button("Manutenzione"); st.button("Affitto Ufficio")
+            st.warning("⚠️ Carica il PDF per iniziare.")
+            st.stop()
 
-if __name__ == "__main__":
-    main()
+    # MAIN: Ricerca
+    st.subheader("🔎 Ricerca Conti")
+    query = st.text_input("Descrivi l'operazione o inserisci il codice (es. 'Bolletta luce', 'Manutenzione auto', '13.09.001')", placeholder="Scrivi qui...")
+    
+    if query:
+        risultati = search_accounts(query, piano_conti)
+        
+        if not risultati:
+            st.info("Nessun risultato trovato. Prova con un termine più generico o un codice.")
+            return
+            
+        st.success(f"Trovati {len(risultati)} conti pertinenti.")
+        
+        # Preparazione DataFrame per visualizzazione
+        data = []
+        for code, info in risultati:
+            data.append({
+                "Codice": code,
+                "Descrizione": info["desc"],
+                "Natura": get_natura_badge(info["macro"]),
+                "Macro": info["macro"]
+            })
+        df_res = pd.DataFrame(data)
+        
+        # Visualizzazione tabella
+        st.dataframe(df_res[["Codice", "Descrizione", "Natura"]], use_container_width=True, hide_index=True)
+        
+        # SELEZIONE DARE / AVERE
+        st.divider()
+        st.subheader("📝 Composizione Scrittura")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**🔴 Seleziona Conto DARE (Debito)**")
+            dare_options = [f"{r['Codice']} | {r['Descrizione']}" for _, r in df_res.iterrows()]
+            dare_sel = st.selectbox("Conto DARE", [""] + dare_options, label_visibility="collapsed")
+            
+        with col2:
+            st.write("**🟢 Seleziona Conto AVERE (Credito)**")
+            avere_options = [f"{r['Codice']} | {r['Descrizione']}" for _, r in df_res.iterrows()]
+            avere_sel = st.selectbox("Conto AVERE", [""] + avere_options, label_visibility="collapsed")
+            
+        # INPUT IMPORTI
+        if dare_sel and avere_sel:
+            st.divider()
+            st.subheader("💰 Inserimento Importi")
+            col_imp1, col_imp2 = st.columns(2)
+            with col_imp1:
+                imp_dare = st.number_input("Importo DARE €", min_value=0.0, step=0.01, format="%.2f", key="imp_d")
+            with col_imp2:
+                imp_avere = st.number_input("Importo AVERE €", min_value=0.0, step=0.01, format="%.2f", key="imp_a")
+                
+            # GENERAZIONE OUTPUT
+            if imp_dare > 0 and imp_avere > 0:
+                # Pulizia selezione
+                cod_dare = dare_sel.split(" | ")[0]
+                desc_dare = dare_sel.split(" | ")[1]
+                cod_avere = avere_sel.split(" | ")[0]
+                desc_avere = avere_sel.split(" | ")[1]
+                
+                # Costruzione righe
+                righe = [
+                    {"Lato": "DARE", "Codice": cod_dare, "Descrizione": desc_dare, "Importo €": imp_dare},
+                    {"Lato": "AVERE", "
