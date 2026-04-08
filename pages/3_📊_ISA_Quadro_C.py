@@ -312,11 +312,53 @@ Raccomandazione: [verificare con cliente / chiedere documentazione]
 - [ ] Note di credito applicate come storni negativi (non nuovi ricavi)
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-💡 ISTRUZIONE FINALE DI SAFETY:
-Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
-"""
-    
-    return prompt
+            💡 ISTRUZIONE FINALE DI SAFETY:
+            Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
+            
+            📝 FORMATO OUTPUT OBBLIGATORIO (STRUTTURA DA SEGUIRE)
+            Per assicurarmi che il lavoro sia completo, il tuo output finale DEVE seguire ESATTAMENTE questo schema. Se salti una sezione, il lavoro è INVALIDO.
+            
+            ──────────────────────────────────────────────────────
+            1. REGISTRO FATTURE (Esempio prime 10)
+            ──────────────────────────────────────────────────────
+            | N. Fattura | Data | Imponibile € | Campo C## | Descrizione Sintetica |
+            |------------|------|--------------|-----------|-----------------------|
+            | ... | ... | ... | ... | ... |
+            
+            ──────────────────────────────────────────────────────
+            2. TABELLA RIEPILOGATIVA QUADRO C (Specializzazione C01-C25)
+            ──────────────────────────────────────────────────────
+            | Campo | Descrizione | Imponibile Totale € | % | N. Fatture |
+            |-------|-------------|---------------------|---|------------|
+            | C01   | ...         | 0,00                | 0%| 0          |
+            ...
+            | TOT   |             | XXXXXX              |100%| XXX        |
+            
+            ──────────────────────────────────────────────────────
+            3. TABELLA RIEPILOGATIVA QUADRO C (Tipologia Servizio C26-C30)
+            ──────────────────────────────────────────────────────
+            (Stessa struttura di sopra, deve sommare 100%)
+            
+            ──────────────────────────────────────────────────────
+            4. GIUSTIFICAZIONE ANALITICA (Per ogni campo compilato)
+            ──────────────────────────────────────────────────────
+            [C## - Descrizione Campo: XX% | € Totale]
+            - Fatt. Nr. XXX del GG/MM - € Importo - "Descrizione breve"
+            - Fatt. Nr. YYY del GG/MM - € Importo - "Descrizione breve"
+            ...
+            
+            ──────────────────────────────────────────────────────
+            5. CRITICITÀ E CHECKLIST
+            ──────────────────────────────────────────────────────
+            [CRITICITÀ 1] ...
+            [CHECKLIST]
+            - [ ] Tutte le fatture lette? SI/NO
+            - [ ] Somma C01-C25 = 100%? SI/NO
+            - [ ] Somma C26-C30 = 100%? SI/NO
+            
+            """
+            
+            return prompt 
 
 # =============================================================================
 # INTERFACCIA STREAMLIT
