@@ -732,3 +732,5 @@ if __name__ == "__main__":
     print("9. Rateo attivo/passivo")
     print("10. Accantonamento fondo rischi")
     print("="*80)
+if __name__ == "__main__":
+    main()
