@@ -65,7 +65,7 @@ class PianoDeiConti:
             "28.00.000": {"descrizione": "CREDITI", "tipo": "Patrimoniale"},
             "28.01.001": {"descrizione": "CLIENTE", "tipo": "Patrimoniale"},
             "28.11.001": {"descrizione": "CREDITO IRES", "tipo": "Patrimoniale attivo"},
-            "28.11.009": {"descrizione": "CREDITO IVA", "tipo": "Patrimoniale attivo"},
+            "28.11.009": {"descrizione": "ERARIO C/IVA", "tipo": "Patrimoniale"},
             "28.15.001": {"descrizione": "CREDITO INAIL C/CONGUAGLIO", "tipo": "Patrimoniale attivo"},
             "28.15.053": {"descrizione": "DIPENDENTI C/ANTICIPI SU RETRIB.", "tipo": "Patrimoniale attivo"},
             
@@ -175,7 +175,7 @@ class PianoDeiConti:
             "75.11.073": {"descrizione": "COMPENSI PER COLLAB. A PROGETTO", "tipo": "Economico costi"},
             "75.11.113": {"descrizione": "SPESE TELEFONICHE", "tipo": "Economico costi"},
             "75.13.009": {"descrizione": "PROVVIGIONI A INTERMEDIARI", "tipo": "Economico costi"},
-            "75.13.037": {"descrizione": "SPESE DI PUBBLICITA '", "tipo": "Economico costi"},
+            "75.13.037": {"descrizione": "SPESE DI PUBBLICITA", "tipo": "Economico costi"},
             "75.15.001": {"descrizione": "ASSICURAZIONI", "tipo": "Economico costi"},
             "75.15.005": {"descrizione": "ASSICURAZIONI AUTO", "tipo": "Economico costi"},
             "75.17.009": {"descrizione": "SPESE DI PULIZIA ESTERNI", "tipo": "Economico costi"},
@@ -198,7 +198,7 @@ class PianoDeiConti:
             "79.03.001": {"descrizione": "ONERI INPS", "tipo": "Economico costi"},
             "79.03.005": {"descrizione": "ONERI INAIL", "tipo": "Economico costi"},
             "79.05.001": {"descrizione": "ACC.TO FONDO TFR", "tipo": "Economico costi"},
-            "79.05.005": {"descrizione": "QUOTA TFR MATURATA NELL ' ANNO", "tipo": "Economico costi"},
+            "79.05.005": {"descrizione": "QUOTA TFR MATURATA NELL'ANNO", "tipo": "Economico costi"},
             
             # AMMORTAMENTI
             "81.00.000": {"descrizione": "AMMOR.TO DELLE IMMOBILIZ. IMMATERIALI", "tipo": "Economico"},
@@ -362,13 +362,18 @@ class GeneratoreScritture:
         importo_iva = importo_imponibile * (iva_percentuale / 100)
         importo_totale = importo_imponibile + importo_iva
         
-        scrittura = ScritturaContabile(data, f"Acquisto immobilizzazione - {self.piano_conti.get_conto(conto_immobilizzazione)['descrizione']}")
+        descrizione_op = f"Acquisto immobilizzazione - {self.piano_conti.get_conto(conto_immobilizzazione)['descrizione']}"
+        if split_payment:
+            descrizione_op += " (Split Payment)"
+            
+        scrittura = ScritturaContabile(data, descrizione_op)
         
         if split_payment:
-            # Split payment: IVA a credito verso Erario
-            scrittura.aggiungi_riga(conto_immobilizzazione, "D", importo_totale, self.piano_conti)
-            scrittura.aggiungi_riga("49.13.001", "A", importo_imponibile, self.piano_conti)  # Debiti v/fornitori
-            scrittura.aggiungi_riga("28.11.009", "A", importo_iva, self.piano_conti)  # Erario c/IVA split payment
+            # Split payment: Il costo è al netto, l'IVA viene gestita tramite compensazione Erario
+            scrittura.aggiungi_riga(conto_immobilizzazione, "D", importo_imponibile, self.piano_conti)
+            scrittura.aggiungi_riga("28.11.009", "D", importo_iva, self.piano_conti)  # IVA a credito (Split)
+            scrittura.aggiungi_riga("49.13.001", "A", importo_imponibile, self.piano_conti)  # Debiti v/fornitori (Netto)
+            scrittura.aggiungi_riga("49.23.009", "A", importo_iva, self.piano_conti)  # Erario c/IVA (Debito compensato)
         else:
             # IVA ordinaria
             scrittura.aggiungi_riga(conto_immobilizzazione, "D", importo_totale, self.piano_conti)
@@ -402,9 +407,11 @@ class GeneratoreScritture:
         scrittura = ScritturaContabile(data, "Acquisto materiali di consumo")
         
         if split_payment:
-            scrittura.aggiungi_riga("73.01.017", "D", importo_totale, self.piano_conti)  # Materiali consumo
+            # Split Payment logic corretta
+            scrittura.aggiungi_riga("73.01.017", "D", importo_imponibile, self.piano_conti)  # Materiali consumo (Netto)
+            scrittura.aggiungi_riga("28.11.009", "D", importo_iva, self.piano_conti)  # IVA a credito
             scrittura.aggiungi_riga("49.13.001", "A", importo_imponibile, self.piano_conti)  # Debiti v/fornitori
-            scrittura.aggiungi_riga("28.11.009", "A", importo_iva, self.piano_conti)  # Erario c/IVA split
+            scrittura.aggiungi_riga("49.23.009", "A", importo_iva, self.piano_conti)  # Erario c/IVA
         else:
             scrittura.aggiungi_riga("73.01.017", "D", importo_totale, self.piano_conti)
             scrittura.aggiungi_riga("49.13.001", "A", importo_totale, self.piano_conti)
@@ -418,13 +425,26 @@ class GeneratoreScritture:
         importo_netto = importo_lordo - ritenute_irpef - contributi_inps_dipendente
         
         scrittura = ScritturaContabile(data, "Liquidazione stipendi")
-        scrittura.aggiungi_riga("79.01.005", "D", importo_lordo, self.piano_conti)  # Stipendi impiegati
-        scrittura.aggiungi_riga("49.27.025", "A", importo_netto, self.piano_conti)  # Debiti v/dipendenti
-        scrittura.aggiungi_riga("49.23.029", "A", ritenute_irpef, self.piano_conti)  # Erario c/ritenute
-        scrittura.aggiungi_riga("49.25.001", "A", contributi_inps_dipendente, self.piano_conti)  # Debiti v/INPS
         
+        # Dare: Stipendi Lordi
+        scrittura.aggiungi_riga("79.01.005", "D", importo_lordo, self.piano_conti)
+        
+        # Dare: Oneri INAIL a carico azienda (se presenti)
         if contributi_inail > 0:
-            scrittura.aggiungi_riga("49.25.005", "A", contributi_inail, self.piano_conti)  # Debiti v/INAIL
+            scrittura.aggiungi_riga("79.03.005", "D", contributi_inail, self.piano_conti)
+        
+        # Avere: Netto al dipendente
+        scrittura.aggiungi_riga("49.27.025", "A", importo_netto, self.piano_conti)
+        
+        # Avere: Ritenute IRPEF
+        scrittura.aggiungi_riga("49.23.029", "A", ritenute_irpef, self.piano_conti)
+        
+        # Avere: Contributi INPS dipendente
+        scrittura.aggiungi_riga("49.25.001", "A", contributi_inps_dipendente, self.piano_conti)
+        
+        # Avere: Debito INAIL
+        if contributi_inail > 0:
+            scrittura.aggiungi_riga("49.25.005", "A", contributi_inail, self.piano_conti)
         
         self.scritture.append(scrittura)
         return scrittura
@@ -446,9 +466,10 @@ class GeneratoreScritture:
         scrittura = ScritturaContabile(data, f"Fatture da ricevere - {self.piano_conti.get_conto(conto_costo)['descrizione']}")
         
         if split_payment:
-            scrittura.aggiungi_riga(conto_costo, "D", importo_totale, self.piano_conti)
+            scrittura.aggiungi_riga(conto_costo, "D", importo_imponibile, self.piano_conti)
+            scrittura.aggiungi_riga("28.11.009", "D", importo_iva, self.piano_conti)
             scrittura.aggiungi_riga("49.13.005", "A", importo_imponibile, self.piano_conti)  # Fatture da ricevere
-            scrittura.aggiungi_riga("28.11.009", "A", importo_iva, self.piano_conti)  # Erario c/IVA split
+            scrittura.aggiungi_riga("49.23.009", "A", importo_iva, self.piano_conti)
         else:
             scrittura.aggiungi_riga(conto_costo, "D", importo_totale, self.piano_conti)
             scrittura.aggiungi_riga("49.13.005", "A", importo_totale, self.piano_conti)
@@ -518,15 +539,36 @@ class GeneratoreScritture:
         return scrittura
     
     def plusvalenza(self, data: str, conto_immobilizzazione: str, conto_fondo_ammortamento: str, 
-                   valore_contabile: float, prezzo_vendita: float):
+                   valore_netto_contabile: float, prezzo_vendita: float, costo_storico: float):
         """Genera scrittura per plusvalenza da alienazione"""
-        plusvalenza = prezzo_vendita - valore_contabile
+        # Valore netto contabile = Costo Storico - Fondo Ammortamento
+        # Per semplificare, assumiamo che valore_netto_contabile sia il valore da stornare dal fondo
+        # e costo_storico sia il valore da stornare dal cespite.
+        
+        plusvalenza = prezzo_vendita - valore_netto_contabile
         
         scrittura = ScritturaContabile(data, f"Plusvalenza da alienazione")
-        scrittura.aggiungi_riga("28.15.001", "D", prezzo_vendita, self.piano_conti)  # Crediti diversi
-        scrittura.aggiungi_riga(conto_fondo_ammortamento, "D", valore_contabile, self.piano_conti)
-        scrittura.aggiungi_riga(conto_immobilizzazione, "A", valore_contabile + valore_contabile, self.piano_conti)
-        scrittura.aggiungi_riga("95.01.005", "A", plusvalenza, self.piano_conti)  # Plusvalenze
+        
+        # Dare: Crediti diversi (Prezzo di vendita)
+        scrittura.aggiungi_riga("28.15.001", "D", prezzo_vendita, self.piano_conti)
+        
+        # Dare: Fondo Ammortamento (Storno fondo accumulato)
+        # Nota: Qui servirebbe il saldo del fondo, assumiamo sia passato correttamente o calcolato
+        # Per questo esempio, assumiamo valore_netto_contabile sia il netto, quindi il fondo è (Costo - Netto)
+        fondo_da_stornare = costo_storico - valore_netto_contabile
+        if fondo_da_stornare > 0:
+            scrittura.aggiungi_riga(conto_fondo_ammortamento, "D", fondo_da_stornare, self.piano_conti)
+            
+        # Avere: Immobilizzazione (Storno costo storico)
+        scrittura.aggiungi_riga(conto_immobilizzazione, "A", costo_storico, self.piano_conti)
+        
+        # Avere: Plusvalenza
+        if plusvalenza > 0:
+            scrittura.aggiungi_riga("95.01.005", "A", plusvalenza, self.piano_conti)
+        elif plusvalenza < 0:
+            # Se c'è una minusvalenza, va a Dare
+            scrittura.aggiungi_riga("95.03.005", "D", abs(plusvalenza), self.piano_conti)
+            
         self.scritture.append(scrittura)
         return scrittura
     
@@ -571,7 +613,7 @@ def demo_completa():
     
     generatore = GeneratoreScritture()
     
-    print("\n[1] Acquisto immobilizzazioni materiali")
+    print("\n[1] Acquisto immobilizzazioni materiali (Split Payment)")
     generatore.acquisto_immobilizzazione_materiale(
         data="2024-03-15",
         conto_immobilizzazione="13.09.065",  # Computer ed accessori
@@ -580,7 +622,7 @@ def demo_completa():
         split_payment=True
     )
     
-    print("[2] Acquisto materiali di consumo")
+    print("[2] Acquisto materiali di consumo (Split Payment)")
     generatore.acquisto_materiali_consumo(
         data="2024-03-20",
         importo_imponibile=5000.00,
@@ -588,7 +630,7 @@ def demo_completa():
         split_payment=True
     )
     
-    print("[3] Liquidazione stipendi")
+    print("[3] Liquidazione stipendi (Con INAIL)")
     generatore.liquidazione_stipendi(
         data="2024-03-31",
         importo_lordo=50000.00,
@@ -618,7 +660,7 @@ def demo_completa():
         iva_percentuale=22.0
     )
     
-    print("[7] Fatture da ricevere")
+    print("[7] Fatture da ricevere (Split Payment)")
     generatore.fattura_da_ricevere(
         data="2024-12-31",
         conto_costo="75.11.001",  # Consulenze amministrative
