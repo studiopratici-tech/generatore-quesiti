@@ -158,6 +158,41 @@ def parse_istruzioni(pdf_path):
     return result
 
 # =============================================================================
+# VALIDATORE OUTPUT AI (controllo matematico automatico)
+# =============================================================================
+def validate_ai_output(ai_text: str) -> dict:
+    """Verifica che le somme percentuali siano corrette e tutti i campi siano presenti."""
+    errors = []
+    warnings = []
+    import re
+    # Cerca pattern tipo: | C01 | Descrizione | 25,5% |
+    pattern = r'\|\s*(C\d{2})\s*\|.*?\|\s*([\d,]+)%\s*\|'
+    matches = re.findall(pattern, ai_text)
+    
+    sections = {
+        "C01-C25 (Specializzazione)": [float(v.replace(',', '.')) for k, v in matches if 1 <= int(k[1:]) <= 25],
+        "C26-C30 (Tipologia Servizio)": [float(v.replace(',', '.')) for k, v in matches if 26 <= int(k[1:]) <= 30],
+        "C37-C40 (Area Svolgimento)": [float(v.replace(',', '.')) for k, v in matches if 37 <= int(k[1:]) <= 40],
+        "C41-C43 (Ambito Attività)": [float(v.replace(',', '.')) for k, v in matches if 41 <= int(k[1:]) <= 43]
+    }
+    
+    for name, values in sections.items():
+        if not values:
+            warnings.append(f"⚠️ {name}: nessun dato estratto o formato tabella non riconosciuto")
+        else:
+            total = sum(values)
+            if abs(total - 100.0) > 0.1:
+                errors.append(f"❌ {name}: somma = {total:.2f}% (deve essere 100% ±0,1%)")
+                
+    expected_fields = [f"C{i:02d}" for i in range(1, 44)]
+    found_fields = [m[0] for m in matches]
+    missing = set(expected_fields) - set(found_fields)
+    if missing:
+        warnings.append(f"⚠️ Campi non trovati nell'output: {', '.join(sorted(missing))}")
+        
+    return {"valid": len(errors) == 0, "errors": errors, "warnings": warnings}
+
+# =============================================================================
 # GENERATORE PROMPT DINAMICO (VERSIONE CORRETTA E COMPLETA)
 # =============================================================================
 def generate_dynamic_prompt(modello_data, istruzioni_data, general_rules=GENERAL_RULES):
