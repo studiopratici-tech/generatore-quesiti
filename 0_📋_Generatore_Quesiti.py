@@ -1,4 +1,5 @@
 import streamlit as st
+import re  # ← importato qui, fuori dai blocchi
 
 st.set_page_config(
     page_title="Generatore Quesiti",
@@ -235,16 +236,15 @@ if genera_button:
         st.error("⚠️ Seleziona almeno una figura professionale!")
     elif not domanda:
         st.error("⚠️ Scrivi almeno la domanda!")
-            else:
-            # === ESTRAI ANNO DI RIFERIMENTO (PUNTO 4) ===
-            import re
-            anno_riferimento = "2026"  # fallback sicuro
-            if periodo:
-                match = re.search(r'\b(20\d{2})\b', str(periodo))
-                if match:
-                    anno_riferimento = match.group(1)
-            
-            prompt = f"""
+    else:
+        # === ESTRAI ANNO DI RIFERIMENTO (PUNTO 4) ===
+        anno_riferimento = "2026"  # fallback sicuro
+        if periodo:
+            match = re.search(r'\b(20\d{2})\b', str(periodo))
+            if match:
+                anno_riferimento = match.group(1)
+        
+        prompt = f"""
 🔷 QUESITO NORMATIVO CERTO — SISTEMA NORM-ONLY
 
 📋 DATI GENERALI
@@ -334,15 +334,15 @@ Oggetto
 
 Riferimenti normativi
 
-[Normattiva] Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 536, che dispone:
+**[Normattiva]** Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 536, che dispone:
 "Le persone a favore delle quali la legge riserva una quota di eredità sono il coniuge, i figli e, in mancanza di figli, gli ascendenti."
 Questa norma individua in modo tassativo i legittimari...
 
-[Normattiva] Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 553, che dispone:
+**[Normattiva]** Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 553, che dispone:
 "Le disposizioni testamentarie e le donazioni che eccedono la quota di cui il testatore poteva disporre sono soggette a riduzione."
 L'azione di riduzione può essere esercitata esclusivamente dai legittimari...
 
-[Normattiva] D.Lgs. n. 346 del 31/10/1990, art. 2 e art. 7, che dispone:
+**[Normattiva]** D.Lgs. n. 346 del 31/10/1990, art. 2 e art. 7, che dispone:
 "Per i beneficiari non parenti l'aliquota dell'imposta di successione è dell'8% senza franchigia."
 Questo significa che i vicini, come soggetti estranei alla famiglia...
 
@@ -411,14 +411,12 @@ Non aggiungere altro dopo queste righe. Non modificare il testo di queste righe.
 
 CHECKLIST FINALE PRIMA DI INVIARE LA RISPOSTA
 
-CHECKLIST FINALE PRIMA DI INVIARE LA RISPOSTA
-
 Prima di concludere, verifica che la tua risposta contenga:
 - Titolo iniziale: "PARERE PROFESSIONALE – [TITOLO]"
 - Sezioni chiare: Oggetto, Riferimenti normativi, Regola generale, Applicazione al caso
 - Pareri esperti: una sezione "Parere di [FIGURA]" per ogni professionista selezionato
 - Testo discorsivo (NO elenchi come struttura principale)
-- Citazioni normative nel formato: **[Fonte]** [Tipo] n.[X] del [data], art.[Y], c.[Z] ← aggiornato con grassetto
+- Citazioni normative nel formato: **[Fonte]** [Tipo] n.[X] del [data], art.[Y], c.[Z]
 - Le due righe finali esatte: "Villafranca in Lunigiana, GG/MM/AAAA" + "Firma: Studio Pratici"
 
 ✅ CONTROLLI AGGIUNTIVI OBBLIGATORI:
@@ -517,10 +515,9 @@ with st.sidebar:
     """)
     
     st.markdown("---")
-    st.markdown("**Versione:** v1.0_2026-03")
+    st.markdown("**Versione:** v1.1_2026-03")
     st.markdown("**Studio:** Studio Pratici")
 
 # FOOTER
 st.markdown("---")
-st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.0*")
-
+st.markdown("*Sistema NORM-Only - Solo fonti certe, zero interpretazioni | Versione 1.1*")
