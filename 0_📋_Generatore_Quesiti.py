@@ -235,14 +235,23 @@ if genera_button:
         st.error("⚠️ Seleziona almeno una figura professionale!")
     elif not domanda:
         st.error("⚠️ Scrivi almeno la domanda!")
-    else:
-        prompt = f"""
+            else:
+            # === ESTRAI ANNO DI RIFERIMENTO (PUNTO 4) ===
+            import re
+            anno_riferimento = "2026"  # fallback sicuro
+            if periodo:
+                match = re.search(r'\b(20\d{2})\b', str(periodo))
+                if match:
+                    anno_riferimento = match.group(1)
+            
+            prompt = f"""
 🔷 QUESITO NORMATIVO CERTO — SISTEMA NORM-ONLY
 
 📋 DATI GENERALI
 Data: {data}
 Operatore: {operatore}
 Riferimento: {riferimento}
+⚠️ ANNO DI RIFERIMENTO NORMATIVO: {anno_riferimento} (usa aliquote, soglie e norme vigenti in questo anno)
 
 👥 FIGURE DA ATTIVARE
 {chr(10).join(['  ▸ ' + fig for fig in figure_selezionate])}
@@ -270,8 +279,17 @@ Sei un professionista senior che risponde a un quesito dello studio.
    ✓ Cassazione: solo massime ufficiali, non contrastanti
    ✓ Norme Regionali: per quesiti apertura attività
    ✓ Pareri autorevoli: Il Sole 24 Ore, Fiscal Focus
-   Formato citazione: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]
-   Esempio: AdE, Circolare n. 9/E del 14/02/2024, art. 1, c. 54
+   Formato citazione: **[Fonte]** [Tipo] n.[X] del [data], art.[Y], c.[Z]
+Esempio: **[Agenzia delle Entrate]** Circolare n. 9/E del 14/02/2024, art. 1, c. 54
+Esempio: **[Normattiva]** Codice Civile, Regio Decreto n. 262 del 16/03/1942, art. 536, come modificato da Legge n. 205 del 27/12/2023
+   ⚠️ PRIORITÀ ASSOLUTA ALLA NORMATIVA VIGENTE
+• Per ogni istituto giuridico, DEVI cercare e citare SEMPRE la versione più recente della norma, aggiornata alle modifiche intervenute fino alla data del quesito.
+• Se una norma è stata modificata, abrogata o sostituita, cita SOLO il testo vigente, indicando espressamente: "come modificato da [legge di riforma] del [data]".
+• Per dati variabili annualmente (aliquote IRPEF, scaglioni, contributi INPS, minimi esenzione, limiti contanti, franchigie):
+  → Usa SEMPRE i valori dell'anno di riferimento del quesito (es. redditi 2025 → CU 2026 → aliquote Legge di Bilancio 2026)
+  → Se il quesito non specifica l'anno, assumi l'anno corrente e dichiaralo esplicitamente
+  → Cita la fonte dell'aggiornamento: "Aliquote IRPEF 2026: Legge di Bilancio 2026, art. 1, c. [X], pubblicata in G.U. n. [Y] del [data]"
+• Se non sei certo della vigenza di una norma, DICHIARALO e indica l'organo competente per interpello vincolante.
 
 2. STILE DI RISPOSTA
    La risposta deve essere redatta come un parere professionale scritto tra colleghi di studio.
@@ -393,13 +411,22 @@ Non aggiungere altro dopo queste righe. Non modificare il testo di queste righe.
 
 CHECKLIST FINALE PRIMA DI INVIARE LA RISPOSTA
 
+CHECKLIST FINALE PRIMA DI INVIARE LA RISPOSTA
+
 Prima di concludere, verifica che la tua risposta contenga:
 - Titolo iniziale: "PARERE PROFESSIONALE – [TITOLO]"
 - Sezioni chiare: Oggetto, Riferimenti normativi, Regola generale, Applicazione al caso
 - Pareri esperti: una sezione "Parere di [FIGURA]" per ogni professionista selezionato
 - Testo discorsivo (NO elenchi come struttura principale)
-- Citazioni normative nel formato: [Fonte] [Tipo] n.[X] del [data], art.[Y], c.[Z]
+- Citazioni normative nel formato: **[Fonte]** [Tipo] n.[X] del [data], art.[Y], c.[Z] ← aggiornato con grassetto
 - Le due righe finali esatte: "Villafranca in Lunigiana, GG/MM/AAAA" + "Firma: Studio Pratici"
+
+✅ CONTROLLI AGGIUNTIVI OBBLIGATORI:
+- [ ] Verifica vigenza: ogni norma citata è la versione più recente alla data del quesito?
+- [ ] Dati variabili (aliquote IRPEF, scaglioni, contributi INPS, soglie, franchigie): sono aggiornati all'anno di riferimento del caso?
+- [ ] Fonti normative: l'ente/fonte è evidenziato in **grassetto** in ogni citazione?
+- [ ] Se una norma è stata modificata: è indicato "come modificato da [legge] del [data]"?
+- [ ] Se il quesito non specifica l'anno: è stato dichiarato esplicitamente l'anno assunto come riferimento?
 
 Se manca anche solo uno di questi elementi, la risposta è errata. Riscrivila finché non rispetta tutti i punti.
 
