@@ -354,19 +354,39 @@ Dati mancanti per certezza: [cosa servirebbe]
 - [ ] Note di credito applicate come storni negativi
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE) CON RIEPILOGO DI TUTTE LE FATTURE, FATTURA PER FATTURA
-Genera un file word che segua il seguente esempio:
+6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE) CON RIEPILOGO DI TUTTE LE FATTURE, FATTURA PER FATTURA, PER GLI ISA CHE LO RICHIEDONO
+Genera un file word che segua il seguente prompt alla lettera:
 
-📄 REPORT EXECUTIVO - RISULTANZE ISA [CODICE_ISA]
-• LACUNE EMERSE NEL QUADRO C: [elenco puntato delle principali criticità di compilazione, es. "Mancata allocazione geografica in X fatture", "Concentrazione eccessiva su C28 per descrizioni generiche", "Storni non correttamente allineati"]
-• PROBLEMI FATTURA PER FATTURA (solo criticità ALTA/MEDIA): 
-  | N. Fattura | Data | Imp. € | Criticità rilevata | Azione richiesta | Comune Lavori (estrapolato da descrizione fattura) | Campo C Proposto | Motivo Criticità |
-  |------------|------|--------|-------------------|------------------|-----------------------------------------------------|------------------|------------------|
+📥 DATI DI INPUT ATTESI
+- Elenco fatture (PDF, Excel o testo) con: numero, data, importo, descrizione lavori, eventuali riferimenti a pratiche edilizie (CILA/SCIA), note fiscali (reverse charge, note di credito, cessioni materiali).
 
-⚠️ REGOLE GENERAZIONE WORD:
-- Orientamento pagina: Orizzontale
-- Generazione tabella distinta nei bordi, con colorazioni verde e Rosse (nello  sfondo della cella) per indicare stato "corretto" o "necessita intervento"
-- Impagina giustificato
+🔍 REGOLE DI ANALISI
+1. Allocazione geografica:
+   - BASSA: comune/cantiere esplicito in fattura.
+   - MEDIA: comune desumibile da indirizzi parziali, riferimenti incrociati o sede cliente, ma non dichiarato esplicitamente.
+   - ALTA: luogo non determinabile o citato solo tramite protocollo/pratica edilizia senza indicazione del comune.
+2. Proposta Campo C (Ad esempio: Quadro C EG50U):
+   - Assegna il codice più pertinente in base alla descrizione.
+   - BASSA: lavorazione chiaramente riconducibile a una voce specifica del quadro.
+   - MEDIA: descrizione mista, generica o con più lavorazioni senza prevalenza evidente.
+   - ALTA: descrizione non consente una proposta sicura → marca "ASSUNZIONE DA VALIDARE".
+   - Se l'operazione non è una prestazione edilizia tipica EG50U (es. cessione rottami/materiali), usa "FUORI_ISA".
+   - Per descrizioni troppo generiche ("lavori edili", "ristrutturazione", "manutenzione straordinaria"), assegna prudenzialmente "C28".
+3. Casi speciali: identifica storni/note di credito (da trattare come rettifiche economiche), reverse charge edilizio o rottami, e voci fuori perimetro.
+
+📐 STRUTTURA DI OUTPUT RICHIESTA (in Markdown)
+- Titolo: ELENCO CRITICITÀ FATTURA PER FATTURA ISA EG50U - Quadro C - periodo d’imposta [ANNO]
+- Riga metodo: "Metodo usato: [breve descrizione, es. lettura integrale delle X fatture fornite...]"
+- Quadro di sintesi: tabella a 4 colonne con: Totale fatture analizzate, Criticità geografica ALTA/MEDIA/BASSA, Criticità campo ALTA/MEDIA/BASSA, Fatture con storno/nota credito economica, Fatture fuori core EG50U
+- Legenda delle criticità: BASSA, MEDIA, ALTA con le definizioni operative
+- Tabella dettaglio completo: colonne esatte [N. fattura | Data | Imp. € | Comune lavori | Crit. geo | Motivo criticità geografica | Campo C proposto | Crit. campo | Motivo criticità campo / note]
+- Osservazioni finali: elenco puntato con evidenziazione di: fatture a criticità geografica ALTA, storni/NC, voci FUORI_ISA, pattern ricorrenti (es. concentrazione su C28), raccomandazioni di validazione.
+
+⚙️ VINCOLI DI FORMATO
+- Usa SOLO i dati forniti. Non inventare importi, comuni o codici.
+- Mantieni il tono tecnico-fiscale e la struttura tabellare pulita in Markdown.
+- Se un dato è incerto, inserisci esplicitamente "ASSUNZIONE DA VALIDARE".
+- Restituisci SOLO il report richiesto, senza preamboli o commenti aggiuntivi.
 
 💡 ISTRUZIONE FINALE DI SAFETY:
 Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
