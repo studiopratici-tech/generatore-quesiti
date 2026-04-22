@@ -243,6 +243,7 @@ Se il file allegato supera le 30 pagine, DEVI dividerlo mentalmente in blocchi d
 2. Analizza blocco 2 (pag 21-40) → aggiorna registro
 3. Continua fino all'ultima pagina
 4. SOLO ALLA FINE unifica tutti i registri e calcola le percentuali totali
+5. Genero file Word come da istruzioni
 NON provare a tenere tutto in memoria contemporaneamente. Lavora a blocchi sequenziali.
 
 RIPARTI DA CAPO NELL'ANALISI E SEGUI QUESTO PROTOCOLLO SEQUENZIALE:
@@ -353,8 +354,8 @@ Dati mancanti per certezza: [cosa servirebbe]
 - [ ] Note di credito applicate come storni negativi
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-6️⃣ SINTESI FINALE GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE)
-Genera una sezione conclusiva strutturata ESATTAMENTE così, pronta per conversione in .docx con orientamento orizzontale:
+6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE)
+Genera un file word cche segua il seguente esempio:
 
 📄 REPORT EXECUTIVO - RISULTANZE ISA [CODICE_ISA]
 • LACUNE EMERSE NEL QUADRO C: [elenco puntato delle principali criticità di compilazione, es. "Mancata allocazione geografica in X fatture", "Concentrazione eccessiva su C28 per descrizioni generiche", "Storni non correttamente allineati"]
