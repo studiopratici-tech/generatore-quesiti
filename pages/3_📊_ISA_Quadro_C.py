@@ -354,8 +354,8 @@ Dati mancanti per certezza: [cosa servirebbe]
 - [ ] Note di credito applicate come storni negativi
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE)
-Genera un file word cche segua il seguente esempio:
+6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE) CON RIEPILOGO DI TUTTE LE FATTURE, FATTURA PER FATTURA
+Genera un file word che segua il seguente esempio:
 
 📄 REPORT EXECUTIVO - RISULTANZE ISA [CODICE_ISA]
 • LACUNE EMERSE NEL QUADRO C: [elenco puntato delle principali criticità di compilazione, es. "Mancata allocazione geografica in X fatture", "Concentrazione eccessiva su C28 per descrizioni generiche", "Storni non correttamente allineati"]
