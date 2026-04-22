@@ -353,25 +353,19 @@ Dati mancanti per certezza: [cosa servirebbe]
 - [ ] Note di credito applicate come storni negativi
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
-6️⃣ SINTESI FINALE PER EXPORT WORD (LAYOUT ORIZZONTALE)
+6️⃣ SINTESI FINALE GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE)
 Genera una sezione conclusiva strutturata ESATTAMENTE così, pronta per conversione in .docx con orientamento orizzontale:
 
 📄 REPORT EXECUTIVO - RISULTANZE ISA [CODICE_ISA]
 • LACUNE EMERSE NEL QUADRO C: [elenco puntato delle principali criticità di compilazione, es. "Mancata allocazione geografica in X fatture", "Concentrazione eccessiva su C28 per descrizioni generiche", "Storni non correttamente allineati"]
 • PROBLEMI FATTURA PER FATTURA (solo criticità ALTA/MEDIA): 
-  | N. Fattura | Data | Imp. € | Criticità rilevata | Azione richiesta |
-  |------------|------|--------|-------------------|------------------|
-  | [NR] | [DD.MM.AAAA] | [X.XXX,XX] | [descrizione breve] | [cosa verificare/correggere] |
-• RISCHIO COMPLESSIVO: [BASSO/MEDIO/ALTO] + motivazione tecnica in max 2 righe
-• AZIONI CORRETTIVE/RACCOMANDAZIONI: [elenco puntato di interventi pratici per migliorare la documentazione, allineare i campi, correggere errori prima dell'invio]
-• NOTE PER IL CONSULENTE: [osservazioni finali operative, non tecniche]
+  | N. Fattura | Data | Imp. € | Criticità rilevata | Azione richiesta | Comune Lavori (estrapolato da descrizione fattura) | Campo C Proposto | Motivo Criticità |
+  |------------|------|--------|-------------------|------------------|-----------------------------------------------------|------------------|------------------|
 
-⚠️ REGOLE FORMATTAZIONE WORD-READY:
-- Usa SOLO markdown pulito (niente HTML, niente blocchi codice)
-- Mantieni tabelle compatte (max 5 colonne, righe brevi)
-- Usa elenchi puntati diretti, niente frasi lunghe
-- Ogni titolo di sezione in grassetto, spaziatura uniforme
-- Output pronto per copia-incolla diretto in documento Word .docx a pagina orizzontale (margini stretti, font compatto)
+⚠️ REGOLE GENERAZIONE WORD:
+- Orientamento pagina: Orizzontale
+- Generazione tabella distinta nei bordi, con colorazioni verde e Rosse (nello  sfondo della cella) per indicare stato "corretto" o "necessita intervento"
+- Impagina giustificato
 
 💡 ISTRUZIONE FINALE DI SAFETY:
 Se una fattura presenta anche solo un dubbio ragionevole su classificazione, localizzazione, regime IVA o ambito di attività → NON forzare una classificazione certa. Segnalala nella sezione 'CRITICITÀ' e, solo se strettamente necessario, indica l'ipotesi più probabile specificando chiaramente: "ASSUNZIONE DA VALIDARE". In ambito ISA: meglio una segnalazione in più che un errore in dichiarazione.
