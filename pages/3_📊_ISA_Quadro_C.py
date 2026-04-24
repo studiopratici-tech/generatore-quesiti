@@ -355,10 +355,10 @@ Dati mancanti per certezza: [cosa servirebbe]
 - [ ] Regimi IVA (C32, C33, C34) identificati e separati correttamente
 
 6️⃣ SINTESI FINALE E GENERAZIONE FILE WORD (LAYOUT ORIZZONTALE) CON RIEPILOGO DI TUTTE LE FATTURE, FATTURA PER FATTURA, PER GLI ISA CHE LO RICHIEDONO
-Genera un file word che segua il seguente prompt alla lettera:
+Solo dopo aver enunciato tutta l'analisi seguendo rigorosamente tutti gli step precebnendi, genera un file word che segua il seguente prompt alla lettera:
 
 📥 DATI DI INPUT ATTESI
-- Elenco fatture (PDF, Excel o testo) con: numero, data, importo, descrizione lavori, eventuali riferimenti a pratiche edilizie (CILA/SCIA), note fiscali (reverse charge, note di credito, cessioni materiali).
+- Elenco fatture (PDF, Excel o testo) con: numero, data, importo, descrizione lavori, eventuali riferimenti a pratiche edilizie (CILA/SCIA), note fiscali (reverse charge, note di credito, cessioni materiali), allocazione geografica, imputazione al quadro C del modello ISA
 
 🔍 REGOLE DI ANALISI
 1. Allocazione geografica:
