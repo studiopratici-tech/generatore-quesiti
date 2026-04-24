@@ -359,6 +359,7 @@ Solo dopo aver enunciato tutta l'analisi seguendo rigorosamente tutti gli step p
 
 📥 DATI DI INPUT ATTESI
 - Elenco fatture (PDF, Excel o testo) con: numero, data, importo, descrizione lavori, eventuali riferimenti a pratiche edilizie (CILA/SCIA), note fiscali (reverse charge, note di credito, cessioni materiali), allocazione geografica, imputazione al quadro C del modello ISA
+- griglia visibile, larghezze colonne impostate e righe ordinate fattura per fattura
 
 🔍 REGOLE DI ANALISI
 1. Allocazione geografica:
