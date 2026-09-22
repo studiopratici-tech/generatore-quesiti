@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-st.set_page_config(page_title="🍝 Pastai SRL", page_icon="🍝", layout="wide")
+st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
 st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto")
 st.markdown("Analisi completa produzione 2025 e calcolo incidenza costi per vaschetta")
