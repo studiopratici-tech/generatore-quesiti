@@ -2,6 +2,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+# ============================================================
+# CONFIGURAZIONE PAGINA
+# ============================================================
 st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
 st.title("🍝 Pastai SRL - Ripartizione Costi Generali per Prodotto e Vaschetta")
@@ -9,7 +12,7 @@ st.markdown("Inserisci i costi generali dal bilancio e ottieni l'incidenza unita
 st.markdown("---")
 
 # ============================================================
-# DATI PRODUZIONE 2025 - MONTIGNOSO (fissi, non modificabili)
+# DATI PRODUZIONE 2025 - MONTIGNOSO
 # ============================================================
 montignoso_data = {
     'Luogo': ['Montignoso']*30,
@@ -44,7 +47,7 @@ montignoso_data = {
 }
 
 # ============================================================
-# DATI PRODUZIONE 2025 - GROSSETO (fissi, non modificabili)
+# DATI PRODUZIONE 2025 - GROSSETO
 # ============================================================
 grosseto_data = {
     'Luogo': ['Grosseto']*61,
@@ -104,26 +107,63 @@ df['Perc_Produzione'] = (df['Produzione_2025'] / totale_kg) * 100
 # SIDEBAR - INSERIMENTO MANUALE COSTI DAL BILANCIO
 # ============================================================
 st.sidebar.header("💰 INSERIMENTO COSTI DAL BILANCIO")
-st.sidebar.markdown("Inserisci i valori manualmente dal Conto Economico. Tutti i campi partono da zero.")
+st.sidebar.markdown("Inserisci i valori manualmente dal Conto Economico. Lascia a 0 le voci che non vuoi ripartire.")
 st.sidebar.markdown("---")
 
-# Categorie di costo - TUTTE A ZERO
-st.sidebar.subheader("🔹 Costi da Ripartire")
+# --- ANNUALIZZAZIONE ---
+st.sidebar.subheader("📅 Periodo di riferimento")
+periodo = st.sidebar.selectbox(
+    "Il bilancio copre:",
+    ["Annuale (x1)", "Semestrale (x2)", "Trimestrale (x4)", "Bimestrale (x6)", "Personalizzato"],
+    index=1  # Default su semestrale
+)
 
-costo_servizi = st.sidebar.number_input(
-    "709 - Servizi Generali/Amministrativi",
+if periodo == "Personalizzato":
+    moltiplicatore = st.sidebar.number_input(
+        "Moltiplicatore personalizzato",
+        min_value=0.1,
+        max_value=12.0,
+        value=2.0,
+        step=0.5,
+        help="Es: 2 per semestre, 4 per trimestre, 6 per bimestre, 12 per mensile"
+    )
+else:
+    moltiplicatore_map = {
+        "Annuale (x1)": 1,
+        "Semestrale (x2)": 2,
+        "Trimestrale (x4)": 4,
+        "Bimestrale (x6)": 6
+    }
+    moltiplicatore = moltiplicatore_map[periodo]
+
+st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicatore}** per ottenere il totale annuo.")
+
+# --- COSTI INDUSTRIALI ---
+st.sidebar.markdown("---")
+st.sidebar.subheader(" Costi Industriali")
+
+costo_materiali_vari = st.sidebar.number_input(
+    "704 - Acquisto materiali vari",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Utenze, consulenze, assicurazioni, telefonia, gas, pasti, software..."
+    help="Manutenzione, pulizia, cancelleria, indumenti..."
+)
+
+costo_servizi = st.sidebar.number_input(
+    "709 - Servizi generali-amministrativi",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="Acqua, luce, gas, consulenze, telefonia, pasti, software..."
 )
 
 costo_auto = st.sidebar.number_input(
-    "713 - Costi Gestione Autoveicoli",
+    "713 - Costi gestione autoveicoli",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Carburanti, assicurazioni, leasing, noleggio veicoli..."
+    help="Carburanti, leasing, noleggio, assicurazioni..."
 )
 
 costo_manutenzioni = st.sidebar.number_input(
@@ -135,7 +175,7 @@ costo_manutenzioni = st.sidebar.number_input(
 )
 
 costi_altri_servizi = st.sidebar.number_input(
-    "715 - Altri Costi per Servizi",
+    "715 - Altri costi per servizi",
     min_value=0.0,
     value=0.0,
     step=100.0,
@@ -143,7 +183,7 @@ costi_altri_servizi = st.sidebar.number_input(
 )
 
 costo_godimento_beni = st.sidebar.number_input(
-    "717 - Godimento Beni di Terzi",
+    "717 - Costi godimento beni di terzi",
     min_value=0.0,
     value=0.0,
     step=100.0,
@@ -151,62 +191,112 @@ costo_godimento_beni = st.sidebar.number_input(
 )
 
 costo_ammortamenti_imm = st.sidebar.number_input(
-    "725 - Ammort. Immobilizzazioni Immateriali",
+    "725 - Ammort. immobilizzazioni immateriali",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Ammortamenti costi impianto, software, marchi..."
+    help="Software, marchi, know-how..."
 )
 
 costo_ammortamenti_mat = st.sidebar.number_input(
-    "727 - Ammort. Immobilizzazioni Materiali",
+    "727 - Ammort. immobilizzazioni materiali",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Ammortamenti fabbricati, impianti, macchinari, attrezzature..."
+    help="Fabbricati, impianti, macchinari..."
 )
 
 costo_imposte_tasse = st.sidebar.number_input(
-    "735 - Imposte e Tasse",
+    "735 - Imposte e tasse",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Bollo, TARI, diritti camerali..."
+    help="TARI, diritti camerali, concessioni..."
 )
 
 costo_altri_oneri = st.sidebar.number_input(
-    "737/748 - Altri Oneri di Gestione",
+    "737 - Altri oneri di gestione",
     min_value=0.0,
     value=0.0,
     step=100.0,
-    help="Oneri diversi, sopravvenienze passive..."
+    help="Abbuoni, arrotondamenti passivi..."
 )
 
-# Costo diretto personale (opzionale - da ripartire o meno)
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔸 Costo Personale (opzionale)")
-st.sidebar.markdown("_Inserire solo se si vuole ripartire anche la manodopera_")
+costi_straordinari = st.sidebar.number_input(
+    "748 - Oneri straordinari",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="Sopravvenienze passive..."
+)
 
-costo_personale = st.sidebar.number_input(
-    "720 - Spese per Lavoro Dipendente",
+# --- COSTI DIRETTI (OPZIONALI) ---
+st.sidebar.markdown("---")
+st.sidebar.subheader(" Costi Diretti (opzionali)")
+st.sidebar.markdown("_Inserire solo se si vuole ottenere il costo pieno completo_")
+
+costo_materie_prime = st.sidebar.number_input(
+    "702 - Materie prime, sussidi, imballaggi",
     min_value=0.0,
     value=0.0,
     step=1000.0,
-    help="Salari, stipendi, oneri sociali, TFR..."
+    help="Materie prime, materiali di consumo, imballaggi, merci..."
 )
 
-# Calcolo totale costi
-totale_costi = (costo_servizi + costo_auto + costo_manutenzioni + 
-                costi_altri_servizi + costo_godimento_beni + 
-                costo_ammortamenti_imm + costo_ammortamenti_mat +
-                costo_imposte_tasse + costo_altri_oneri + costo_personale)
+costo_personale = st.sidebar.number_input(
+    "720 - Spese per lavoro dipendente",
+    min_value=0.0,
+    value=0.0,
+    step=1000.0,
+    help="Stipendi, oneri sociali, TFR, trasferte..."
+)
+
+# --- COSTI FINANZIARI E FISCALI (OPZIONALI) ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚠️ Costi Finanziari e Fiscali (opzionali)")
+st.sidebar.markdown("_Di solito esclusi dalla ripartizione industriale_")
+
+costi_finanziari = st.sidebar.number_input(
+    "740 - Interessi e oneri finanziari",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="Interessi passivi, commissioni bancarie, factoring..."
+)
+
+imposte_reddito = st.sidebar.number_input(
+    "750 - Imposte sul reddito",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="IRES, IRAP..."
+)
+
+altre_spese = st.sidebar.number_input(
+    "762 - Altre spese",
+    min_value=0.0,
+    value=0.0,
+    step=10.0,
+    help="Manutenzioni auto indeducibili..."
+)
+
+# --- CALCOLO TOTALE ---
+totale_costi_inseriti = (
+    costo_materiali_vari + costo_servizi + costo_auto + costo_manutenzioni +
+    costi_altri_servizi + costo_godimento_beni + costo_ammortamenti_imm +
+    costo_ammortamenti_mat + costo_imposte_tasse + costo_altri_oneri +
+    costi_straordinari +
+    costo_materie_prime + costo_personale +
+    costi_finanziari + imposte_reddito + altre_spese
+)
+
+totale_costi_annuali = totale_costi_inseriti * moltiplicatore
 
 st.sidebar.markdown("---")
-st.sidebar.metric("💰 TOTALE COSTI DA RIPARTIRE", f"€ {totale_costi:,.2f}")
+st.sidebar.metric("💰 Totale costi inseriti", f"€ {totale_costi_inseriti:,.2f}")
+st.sidebar.metric("📈 Totale annualizzato (x" + str(moltiplicatore) + ")", f"€ {totale_costi_annuali:,.2f}")
 
-# ============================================================
-# OPZIONI RIPARTIZIONE
-# ============================================================
+# --- OPZIONI RIPARTIZIONE ---
 st.sidebar.markdown("---")
 st.sidebar.subheader("⚙️ Opzioni Ripartizione")
 
@@ -229,19 +319,19 @@ if modalita == "Per sede separata":
 # ============================================================
 # CALCOLO RIPARTIZIONE
 # ============================================================
-if totale_costi > 0:
+if totale_costi_annuali > 0:
     if modalita == "Su produzione totale (kg)":
-        df['Quota_Costi'] = (df['Perc_Produzione'] / 100) * totale_costi
+        df['Quota_Costi'] = (df['Perc_Produzione'] / 100) * totale_costi_annuali
     else:
         df['Quota_Costi'] = 0.0
         for sede, pct in [('Montignoso', pct_montignoso), ('Grosseto', pct_grosseto)]:
             mask = df['Luogo'] == sede
             tot_sede = df.loc[mask, 'Produzione_2025'].sum()
-            quota_sede = totale_costi * (pct / 100)
+            quota_sede = totale_costi_annuali * (pct / 100)
             df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_2025'] / tot_sede) * quota_sede
     
     df['Costo_per_Vaschetta'] = df['Quota_Costi'] / df['N_Vaschette']
-    costo_medio_vaschetta = totale_costi / totale_vaschette
+    costo_medio_vaschetta = totale_costi_annuali / totale_vaschette
 else:
     df['Quota_Costi'] = 0.0
     df['Costo_per_Vaschetta'] = 0.0
@@ -252,9 +342,9 @@ else:
 # ============================================================
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("📦 Produzione Totale 2025", f"{totale_kg:,.2f} kg")
-col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
-col3.metric("🏭 Prodotti", f"{len(df)}")
-col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi > 0 else "€ 0,0000")
+col2.metric(" Vaschette Totali", f"{totale_vaschette:,.0f}")
+col3.metric(" Prodotti", f"{len(df)}")
+col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 st.markdown("---")
 
@@ -308,28 +398,10 @@ st.dataframe(
 )
 
 # ============================================================
-# ANALISI ABC
-# ============================================================
-st.markdown("---")
-st.subheader("📊 Analisi ABC - Principio di Pareto")
-
-df_abc = df.sort_values('Produzione_2025', ascending=False).copy()
-df_abc['Perc_Cumulata'] = df_abc['Perc_Produzione'].cumsum()
-
-df_abc['Classe'] = 'C'
-df_abc.loc[df_abc['Perc_Cumulata'] <= 80, 'Classe'] = 'A'
-df_abc.loc[(df_abc['Perc_Cumulata'] > 80) & (df_abc['Perc_Cumulata'] <= 95), 'Classe'] = 'B'
-
-col_a, col_b, col_c = st.columns(3)
-col_a.metric("Classe A (80% volume)", f"{len(df_abc[df_abc['Classe']=='A'])} prodotti")
-col_b.metric("Classe B (15% volume)", f"{len(df_abc[df_abc['Classe']=='B'])} prodotti")
-col_c.metric("Classe C (5% volume)", f"{len(df_abc[df_abc['Classe']=='C'])} prodotti")
-
-# ============================================================
 # TOP 20 PRODOTTI
 # ============================================================
 st.markdown("---")
-st.subheader("🏆 Top 20 Prodotti per Volume")
+st.subheader(" Top 20 Prodotti per Volume")
 
 top20 = df.nlargest(20, 'Produzione_2025')[['Luogo', 'Articolo', 'Descrizione', 
                                             'Produzione_2025', 'Perc_Produzione']].copy()
@@ -359,7 +431,7 @@ with st.expander("📐 Vedi formula di calcolo"):
     
     2. **% Produzione** = (Produzione Prodotto ÷ Produzione Totale) × 100
     
-    3. **Quota Costi** = % Produzione × Totale Costi Generali inseriti
+    3. **Quota Costi** = % Produzione × Totale Costi Generali annualizzati
     
     4. **Costo per Vaschetta** = Quota Costi ÷ Numero Vaschette
     
@@ -368,7 +440,7 @@ with st.expander("📐 Vedi formula di calcolo"):
     **Esempio pratico:**
     - Tortello Maremmano 250g: 28.389 kg → 113.556 vaschette
     - % Produzione: 12,13%
-    - Se inserisci € 150.000 di costi → Quota = € 18.195
+    - Se inserisci € 150.000 di costi annualizzati → Quota = € 18.195
     - Costo per Vaschetta = € 0,1602
     """)
 
