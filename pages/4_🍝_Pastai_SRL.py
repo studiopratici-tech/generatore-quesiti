@@ -1,15 +1,16 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from datetime import datetime
 
 st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
-st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto")
-st.markdown("Analisi completa produzione 2025 e calcolo incidenza costi per vaschetta")
+st.title("🍝 Pastai SRL - Ripartizione Costi Generali per Prodotto e Vaschetta")
+st.markdown("Inserisci i costi generali dal bilancio e ottieni l'incidenza unitaria su ogni prodotto.")
 st.markdown("---")
 
-# DATI COMPLETI MONTIGNOSO
+# ============================================================
+# DATI PRODUZIONE 2025 - MONTIGNOSO (fissi, non modificabili)
+# ============================================================
 montignoso_data = {
     'Luogo': ['Montignoso']*30,
     'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708", 
@@ -42,7 +43,9 @@ montignoso_data = {
                         4.68, 8.50, 193.20, 204.80, 1.98, 1.50]
 }
 
-# DATI COMPLETI GROSSETO
+# ============================================================
+# DATI PRODUZIONE 2025 - GROSSETO (fissi, non modificabili)
+# ============================================================
 grosseto_data = {
     'Luogo': ['Grosseto']*61,
     'Articolo': ["'1001", "'1003", "'1005", "'1007", "'1009", "'1101", "'1109", "'1110", "'1111", "'1113",
@@ -86,95 +89,126 @@ grosseto_data = {
                         1381.75, 147.50, 3018.50, 793.75, 4634.25, 1265.00, 1168.00, 136.20, 329.00, 8814.50, 10607.75]
 }
 
-# Unisci dati
+# Unisci i dati
 df_mont = pd.DataFrame(montignoso_data)
 df_gros = pd.DataFrame(grosseto_data)
 df = pd.concat([df_mont, df_gros], ignore_index=True)
 
-# Calcola numero vaschette
+# Calcoli fissi sui dati di produzione
 df['N_Vaschette'] = df['Produzione_2025'] / df['Peso']
-
-# Totali
 totale_kg = df['Produzione_2025'].sum()
 totale_vaschette = df['N_Vaschette'].sum()
-
-# Percentuale produzione
 df['Perc_Produzione'] = (df['Produzione_2025'] / totale_kg) * 100
 
-# SIDEBAR - INSERIMENTO COSTI DAL CONTO ECONOMICO
-st.sidebar.header(" INSERIMENTO COSTI DAL CE")
-st.sidebar.markdown("Inserisci i costi generali dal Conto Economico")
+# ============================================================
+# SIDEBAR - INSERIMENTO MANUALE COSTI DAL BILANCIO
+# ============================================================
+st.sidebar.header("💰 INSERIMENTO COSTI DAL BILANCIO")
+st.sidebar.markdown("Inserisci i valori manualmente dal Conto Economico. Tutti i campi partono da zero.")
+st.sidebar.markdown("---")
 
-# Categorie di costo principali dal CE
-st.sidebar.subheader("Costi da Ripartire")
+# Categorie di costo - TUTTE A ZERO
+st.sidebar.subheader("🔹 Costi da Ripartire")
 
 costo_servizi = st.sidebar.number_input(
-    "Servizi Generali/Amministrativi",
+    "709 - Servizi Generali/Amministrativi",
     min_value=0.0,
-    value=86164.50,
+    value=0.0,
     step=100.0,
-    help="Conto 709 - Servizi generali"
+    help="Utenze, consulenze, assicurazioni, telefonia, gas, pasti, software..."
 )
 
 costo_auto = st.sidebar.number_input(
-    "Costi Gestione Autoveicoli",
+    "713 - Costi Gestione Autoveicoli",
     min_value=0.0,
-    value=54512.60,
+    value=0.0,
     step=100.0,
-    help="Conto 713"
+    help="Carburanti, assicurazioni, leasing, noleggio veicoli..."
 )
 
 costo_manutenzioni = st.sidebar.number_input(
-    "Manutenzioni",
+    "714 - Manutenzioni",
     min_value=0.0,
-    value=5332.83,
+    value=0.0,
     step=100.0,
-    help="Conto 714"
+    help="Manutenzione beni propri e auto"
 )
 
 costi_altri_servizi = st.sidebar.number_input(
-    "Altri Costi per Servizi",
+    "715 - Altri Costi per Servizi",
     min_value=0.0,
-    value=91779.76,
+    value=0.0,
     step=100.0,
-    help="Conto 715 - Trasporti, pubblicità, ecc."
+    help="Trasporti, pubblicità, provvigioni, contributi..."
 )
 
 costo_godimento_beni = st.sidebar.number_input(
-    "Godimento Beni di Terzi",
+    "717 - Godimento Beni di Terzi",
     min_value=0.0,
-    value=85266.07,
+    value=0.0,
     step=100.0,
-    help="Conto 717 - Affitti, noleggi"
+    help="Fitti passivi, noleggio impianti, licenze software..."
 )
 
-costo_ammortamenti = st.sidebar.number_input(
-    "Ammortamenti Totali",
+costo_ammortamenti_imm = st.sidebar.number_input(
+    "725 - Ammort. Immobilizzazioni Immateriali",
     min_value=0.0,
-    value=82196.54,  # 45813.57 + 36382.97
+    value=0.0,
     step=100.0,
-    help="Conti 725 + 727"
+    help="Ammortamenti costi impianto, software, marchi..."
+)
+
+costo_ammortamenti_mat = st.sidebar.number_input(
+    "727 - Ammort. Immobilizzazioni Materiali",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="Ammortamenti fabbricati, impianti, macchinari, attrezzature..."
+)
+
+costo_imposte_tasse = st.sidebar.number_input(
+    "735 - Imposte e Tasse",
+    min_value=0.0,
+    value=0.0,
+    step=100.0,
+    help="Bollo, TARI, diritti camerali..."
 )
 
 costo_altri_oneri = st.sidebar.number_input(
-    "Altri Oneri di Gestione",
+    "737/748 - Altri Oneri di Gestione",
     min_value=0.0,
-    value=10000.00,
+    value=0.0,
     step=100.0,
-    help="Conti 735, 737, 748"
+    help="Oneri diversi, sopravvenienze passive..."
+)
+
+# Costo diretto personale (opzionale - da ripartire o meno)
+st.sidebar.markdown("---")
+st.sidebar.subheader("🔸 Costo Personale (opzionale)")
+st.sidebar.markdown("_Inserire solo se si vuole ripartire anche la manodopera_")
+
+costo_personale = st.sidebar.number_input(
+    "720 - Spese per Lavoro Dipendente",
+    min_value=0.0,
+    value=0.0,
+    step=1000.0,
+    help="Salari, stipendi, oneri sociali, TFR..."
 )
 
 # Calcolo totale costi
 totale_costi = (costo_servizi + costo_auto + costo_manutenzioni + 
                 costi_altri_servizi + costo_godimento_beni + 
-                costo_ammortamenti + costo_altri_oneri)
+                costo_ammortamenti_imm + costo_ammortamenti_mat +
+                costo_imposte_tasse + costo_altri_oneri + costo_personale)
 
 st.sidebar.markdown("---")
-st.sidebar.metric(" TOTALE COSTI DA RIPARTIRE", f"€ {totale_costi:,.2f}")
+st.sidebar.metric("💰 TOTALE COSTI DA RIPARTIRE", f"€ {totale_costi:,.2f}")
 
-# Modalità di ripartizione
+# ============================================================
+# OPZIONI RIPARTIZIONE
+# ============================================================
 st.sidebar.markdown("---")
-st.sidebar.subheader("Opzioni Ripartizione")
+st.sidebar.subheader("⚙️ Opzioni Ripartizione")
 
 modalita = st.sidebar.radio(
     "Base di ripartizione:",
@@ -182,60 +216,70 @@ modalita = st.sidebar.radio(
     index=0
 )
 
-# Calcolo ripartizione
-if modalita == "Su produzione totale (kg)":
-    df['Quota_Costi'] = df['Perc_Produzione'] / 100 * totale_costi
+if modalita == "Per sede separata":
+    st.sidebar.markdown("_Ripartisci i costi tra le due sedi_")
+    pct_montignoso = st.sidebar.slider(
+        "% costi su Montignoso", 
+        0, 100, 15,
+        help="Percentuale dei costi totali da attribuire a Montignoso"
+    )
+    pct_grosseto = 100 - pct_montignoso
+    st.sidebar.info(f"Montignoso: {pct_montignoso}% | Grosseto: {pct_grosseto}%")
+
+# ============================================================
+# CALCOLO RIPARTIZIONE
+# ============================================================
+if totale_costi > 0:
+    if modalita == "Su produzione totale (kg)":
+        df['Quota_Costi'] = (df['Perc_Produzione'] / 100) * totale_costi
+    else:
+        df['Quota_Costi'] = 0.0
+        for sede, pct in [('Montignoso', pct_montignoso), ('Grosseto', pct_grosseto)]:
+            mask = df['Luogo'] == sede
+            tot_sede = df.loc[mask, 'Produzione_2025'].sum()
+            quota_sede = totale_costi * (pct / 100)
+            df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_2025'] / tot_sede) * quota_sede
+    
+    df['Costo_per_Vaschetta'] = df['Quota_Costi'] / df['N_Vaschette']
+    costo_medio_vaschetta = totale_costi / totale_vaschette
 else:
-    # Ripartizione per sede
     df['Quota_Costi'] = 0.0
-    for sede in ['Montignoso', 'Grosseto']:
-        mask = df['Luogo'] == sede
-        tot_sede = df.loc[mask, 'Produzione_2025'].sum()
-        
-        # Calcola costi specifici per sede (puoi modificare le percentuali)
-        if sede == 'Montignoso':
-            pct_costi = st.sidebar.slider(f"% costi su {sede}", 0, 100, 15, 
-                                         help="Percentuale costi generali su Montignoso")
-        else:
-            pct_costi = 100 - st.sidebar.slider(f"% costi su {sede}", 0, 100, 85,
-                                               help="Percentuale costi generali su Grosseto")
-        
-        quota_sede = totale_costi * (pct_costi / 100)
-        df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_2025'] / tot_sede) * quota_sede
+    df['Costo_per_Vaschetta'] = 0.0
+    costo_medio_vaschetta = 0.0
 
-# Calcolo costo per vaschetta
-df['Costo_per_Vaschetta'] = df['Quota_Costi'] / df['N_Vaschette']
-
-# DASHBOARD
+# ============================================================
+# DASHBOARD KPI
+# ============================================================
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("📦 Produzione Totale", f"{totale_kg:,.2f} kg")
+col1.metric("📦 Produzione Totale 2025", f"{totale_kg:,.2f} kg")
 col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
 col3.metric("🏭 Prodotti", f"{len(df)}")
-col4.metric("💰 Costo Medio/Vaschetta", f"€ {totale_costi/totale_vaschette:.4f}")
+col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi > 0 else "€ 0,0000")
 
 st.markdown("---")
 
+# ============================================================
 # FILTRI
+# ============================================================
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input("Cerca prodotto...", "")
+    ricerca = st.text_input("🔍 Cerca prodotto...", "")
 
-# Applica filtri
 df_vis = df.copy()
 if filtro_sede != "Tutte":
     df_vis = df_vis[df_vis['Luogo'] == filtro_sede]
 if ricerca:
-    df_vis = df_vis[df_vis['Descrizione'].str.contains(ricerca, case=False)]
+    df_vis = df_vis[df_vis['Descrizione'].str.contains(ricerca, case=False, na=False)]
 
-# Ordina per costo
 df_vis = df_vis.sort_values('Quota_Costi', ascending=False)
 
-# TABELLA COMPLETA
+# ============================================================
+# TABELLA COMPLETA PRODOTTI
+# ============================================================
 st.subheader(f"📋 Dettaglio Prodotti ({len(df_vis)} prodotti)")
 
-# Formatta tabella
 df_table = df_vis.copy()
 df_table['Peso_kg'] = df_table['Peso'].map(lambda x: f"{x} kg")
 df_table['Produzione'] = df_table['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
@@ -244,12 +288,11 @@ df_table['% Produzione'] = df_table['Perc_Produzione'].map(lambda x: f"{x:.3f}%"
 df_table['Quota Costi'] = df_table['Quota_Costi'].map(lambda x: f"€ {x:,.2f}")
 df_table['Costo/Vaschetta'] = df_table['Costo_per_Vaschetta'].map(lambda x: f"€ {x:.4f}")
 
-# Seleziona colonne da mostrare
-colonne = ['Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione', 
-           'Vaschette', '% Produzione', 'Quota Costi', 'Costo/Vaschetta']
+colonne_display = ['Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione', 
+                   'Vaschette', '% Produzione', 'Quota Costi', 'Costo/Vaschetta']
 
 st.dataframe(
-    df_table[colonne].rename(columns={
+    df_table[colonne_display].rename(columns={
         'Luogo': 'Sede',
         'Articolo': 'Cod.',
         'Descrizione': 'Prodotto',
@@ -264,7 +307,9 @@ st.dataframe(
     hide_index=True
 )
 
+# ============================================================
 # ANALISI ABC
+# ============================================================
 st.markdown("---")
 st.subheader("📊 Analisi ABC - Principio di Pareto")
 
@@ -280,7 +325,9 @@ col_a.metric("Classe A (80% volume)", f"{len(df_abc[df_abc['Classe']=='A'])} pro
 col_b.metric("Classe B (15% volume)", f"{len(df_abc[df_abc['Classe']=='B'])} prodotti")
 col_c.metric("Classe C (5% volume)", f"{len(df_abc[df_abc['Classe']=='C'])} prodotti")
 
-# TOP 20
+# ============================================================
+# TOP 20 PRODOTTI
+# ============================================================
 st.markdown("---")
 st.subheader("🏆 Top 20 Prodotti per Volume")
 
@@ -301,37 +348,43 @@ st.dataframe(
     hide_index=True
 )
 
+# ============================================================
+# FORMULA DI CALCOLO
+# ============================================================
+with st.expander("📐 Vedi formula di calcolo"):
+    st.markdown("""
+    **Come funziona la ripartizione:**
+    
+    1. **Numero Vaschette** = Produzione (kg) ÷ Peso unitario (kg)
+    
+    2. **% Produzione** = (Produzione Prodotto ÷ Produzione Totale) × 100
+    
+    3. **Quota Costi** = % Produzione × Totale Costi Generali inseriti
+    
+    4. **Costo per Vaschetta** = Quota Costi ÷ Numero Vaschette
+    
+    ---
+    
+    **Esempio pratico:**
+    - Tortello Maremmano 250g: 28.389 kg → 113.556 vaschette
+    - % Produzione: 12,13%
+    - Se inserisci € 150.000 di costi → Quota = € 18.195
+    - Costo per Vaschetta = € 0,1602
+    """)
+
+# ============================================================
 # EXPORT
+# ============================================================
 st.markdown("---")
 st.subheader("💾 Esporta Dati")
 
 csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
 st.download_button(
-    label="📥 Scarica analisi completa CSV",
+    label="📥 Scarica analisi completa in CSV",
     data=csv,
     file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
     mime='text/csv'
 )
 
-# RIEPILOGO FORMULA
-with st.expander("📐 Vedi formula di calcolo"):
-    st.markdown("""
-    **Formula utilizzata:**
-    
-    1. **Numero Vaschette** = Produzione (kg) / Peso unitario (kg)
-    
-    2. **% Produzione** = (Produzione Prodotto / Produzione Totale) × 100
-    
-    3. **Quota Costi** = % Produzione × Totale Costi Generali
-    
-    4. **Costo per Vaschetta** = Quota Costi / Numero Vaschette
-    
-    **Esempio:**
-    - Tortello Maremmano 250g: 28.389 kg → 113.556 vaschette
-    - % Produzione: 12,13%
-    - Quota Costi (€150.000): €18.195
-    - Costo per Vaschetta: €0,1602
-    """)
-
 st.markdown("---")
-st.caption("Ultimo aggiornamento: Dati 2025 | Conto Economico al 30.06.2026")
+st.caption("Dati produzione 2025 | Inserimento costi manuale dal bilancio")
