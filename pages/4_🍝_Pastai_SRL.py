@@ -5,18 +5,18 @@ from datetime import datetime
 # ============================================================
 # CONFIGURAZIONE PAGINA
 # ============================================================
-st.set_page_config(page_title="🍝 Pastai SRL", page_icon="🍝", layout="wide")
+st.set_page_config(page_title="🍝 Pastai SRL", page_icon="", layout="wide")
 
-st.title("🍝 Pastai SRL - Ripartizione Costi e Complessità Produttiva")
+st.title(" Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Inserisci i costi dal bilancio, definisci la complessità dei prodotti e ottieni il costo reale per vaschetta.")
 st.markdown("---")
 
 # ============================================================
-# DATI PRODUZIONE 2025 - MONTIGNOSO
+# DATI PRODUZIONE 2025 - MONTIGNOSO (30 prodotti)
 # ============================================================
 montignoso_data = {
-    'Luogo': ['Montignoso']*30,
-    'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708", 
+    'Luogo': ['Montignoso'] * 30,
+    'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708",
                  "'9709", "'9710", "'9750", "'9751", "'9752", "'9753", "'9755", "'9756",
                  "'9758", "'9759", "'9760", "'9761", "'9763", "'9764", "'9765", "'9766",
                  "'9767", "'9768", "'9769", "'9770", "'9771", "'9772"],
@@ -30,14 +30,14 @@ montignoso_data = {
         'Tortello RS Ragù SG - 200g', 'Gnudo Burro Salvia SG - 200g',
         'Picio Ragù SG - 180g', 'Sfoglia Lasagna SG - 250g',
         'Lasagne Bolognese SG - 200g', 'Trofie Senza Glutine - 250g',
-        'Trofie Pesto - 200g', 'Trofie Pesto SG - 180g',
+        'Trofie Pesto 200g', 'Trofie Pesto SG - 180g',
         'Taglierini Ragù SG - 180g', 'Tortello RS Ragù SG - 180g',
         'Tortello RS Burro Salvia SG - 180g', 'Pansoti Noci SG - 180g',
         'Tordello Carne Ragù SG - 180g', 'Lasagne Bolognese SG - 250g',
         'Torta Bietole SG - 200g', 'Torta Zucchine SG - 200g',
         'Trenette Pesto SG - 180g', 'Ravioli Genovese Ragù SG - 180g'
     ],
-    'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25, 
+    'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25,
              0.2, 0.2, 0.2, 0.2, 0.18, 0.25, 0.2, 0.25, 0.2, 0.18,
              0.18, 0.18, 0.18, 0.18, 0.18, 0.25, 0.2, 0.2, 0.18, 0.25],
     'Produzione_2025': [5678.75, 1263.75, 22.00, 2905.25, 868.75, 2708.00, 6061.00, 3395.00,
@@ -47,10 +47,10 @@ montignoso_data = {
 }
 
 # ============================================================
-# DATI PRODUZIONE 2025 - GROSSETO
+# DATI PRODUZIONE 2025 - GROSSETO (61 prodotti)
 # ============================================================
 grosseto_data = {
-    'Luogo': ['Grosseto']*61,
+    'Luogo': ['Grosseto'] * 61,
     'Articolo': ["'1001", "'1003", "'1005", "'1007", "'1009", "'1101", "'1109", "'1110", "'1111", "'1113",
                  "'1121", "'1141", "'1151", "'1153", "'1154", "'1183", "'1184", "'1201", "'1202", "'1501",
                  "'1505", "'1507", "'1602", "'1611", "'1701", "'1803", "'1804", "'2001", "'2003", "'2004",
@@ -92,19 +92,17 @@ grosseto_data = {
                         1381.75, 147.50, 3018.50, 793.75, 4634.25, 1265.00, 1168.00, 136.20, 329.00, 8814.50, 10607.75]
 }
 
-# Unisci i dati e calcoli base
+# Unisci i dati
 df_mont = pd.DataFrame(montignoso_data)
 df_gros = pd.DataFrame(grosseto_data)
 df = pd.concat([df_mont, df_gros], ignore_index=True)
 
-# Calcolo numero vaschette
+# Calcoli base
 df['N_Vaschette'] = df['Produzione_2025'] / df['Peso']
-
-# Aggiungiamo il Coefficiente di Complessità (Default 1.00)
 df['Coefficiente'] = 1.00
 
 # ============================================================
-# SIDEBAR - INSERIMENTO COSTI
+# SIDEBAR - INSERIMENTO COSTI DAL BILANCIO
 # ============================================================
 st.sidebar.header("💰 INSERIMENTO COSTI DAL BILANCIO")
 st.sidebar.markdown("Inserisci i valori manualmente. Lascia a 0 le voci che non vuoi ripartire.")
@@ -119,16 +117,22 @@ periodo = st.sidebar.selectbox(
 )
 
 if periodo == "Personalizzato":
-    moltiplicatore = st.sidebar.number_input("Moltiplicatore personalizzato", min_value=0.1, max_value=12.0, value=2.0, step=0.5)
+    moltiplicatore = st.sidebar.number_input(
+        "Moltiplicatore personalizzato",
+        min_value=0.1, max_value=12.0, value=2.0, step=0.5
+    )
 else:
-    moltiplicatore_map = {"Annuale (x1)": 1, "Semestrale (x2)": 2, "Trimestrale (x4)": 4, "Bimestrale (x6)": 6}
+    moltiplicatore_map = {
+        "Annuale (x1)": 1, "Semestrale (x2)": 2,
+        "Trimestrale (x4)": 4, "Bimestrale (x6)": 6
+    }
     moltiplicatore = moltiplicatore_map[periodo]
 
 st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicatore}**.")
 
 # --- COSTI INDUSTRIALI ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("🔹 Costi Industriali")
+st.sidebar.subheader(" Costi Industriali")
 
 costo_materiali_vari = st.sidebar.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0)
 costo_servizi = st.sidebar.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0)
@@ -144,12 +148,16 @@ costo_altri_oneri = st.sidebar.number_input("737/748 - Altri oneri / Straordinar
 # --- COSTI DIRETTI (OPZIONALI) ---
 st.sidebar.markdown("---")
 st.sidebar.subheader(" Costi Diretti (opzionali)")
+st.sidebar.markdown("_Inserire solo se si vuole ottenere il costo pieno completo_")
+
 costo_materie_prime = st.sidebar.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0)
 costo_personale = st.sidebar.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0)
 
 # --- COSTI FINANZIARI E FISCALI (OPZIONALI) ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("⚠️ Costi Finanziari e Fiscali (opzionali)")
+st.sidebar.subheader("️ Costi Finanziari e Fiscali (opzionali)")
+st.sidebar.markdown("_Di solito esclusi dalla ripartizione industriale_")
+
 costi_finanziari = st.sidebar.number_input("740 - Interessi e oneri finanziari", min_value=0.0, value=0.0, step=100.0)
 imposte_reddito = st.sidebar.number_input("750 - Imposte sul reddito", min_value=0.0, value=0.0, step=100.0)
 altre_spese = st.sidebar.number_input("762 - Altre spese", min_value=0.0, value=0.0, step=10.0)
@@ -166,23 +174,70 @@ totale_costi_annuali = totale_costi_inseriti * moltiplicatore
 
 st.sidebar.markdown("---")
 st.sidebar.metric("💰 Totale costi inseriti", f"€ {totale_costi_inseriti:,.2f}")
-st.sidebar.metric("📈 Totale annualizzato", f"€ {totale_costi_annuali:,.2f}")
+st.sidebar.metric(f"📈 Totale annualizzato (x{moltiplicatore})", f"€ {totale_costi_annuali:,.2f}")
+
+# --- OPZIONI RIPARTIZIONE ---
+st.sidebar.markdown("---")
+st.sidebar.subheader("⚙️ Opzioni Ripartizione")
+
+modalita = st.sidebar.radio(
+    "Base di ripartizione:",
+    ["Su produzione totale (kg)", "Per sede separata"],
+    index=0
+)
+
+if modalita == "Per sede separata":
+    st.sidebar.markdown("_Ripartisci i costi tra le due sedi_")
+    pct_montignoso = st.sidebar.slider(
+        "% costi su Montignoso",
+        0, 100, 15,
+        help="Percentuale dei costi totali da attribuire a Montignoso"
+    )
+    pct_grosseto = 100 - pct_montignoso
+    st.sidebar.info(f"Montignoso: {pct_montignoso}% | Grosseto: {pct_grosseto}%")
 
 # ============================================================
 # COEFFICIENTE DI COMPLESSITÀ (INTERATTIVO)
 # ============================================================
 st.subheader("⚙️ 1. Definizione Coefficiente di Complessità")
-st.markdown("Modifica il coefficiente direttamente nella tabella. **1.00** = Standard. **>1.00** = Più complesso (es. ripieni). **<1.00** = Meno complesso.")
+st.markdown("Modifica il coefficiente direttamente nella tabella. **1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
+
+# Pulsanti rapidi per pre-compilazione
+col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+
+with col_btn1:
+    if st.button("🔄 Reset tutti a 1.00"):
+        df['Coefficiente'] = 1.00
+        st.rerun()
+
+with col_btn2:
+    if st.button("🟡 Imposta Ripieni a 1.30"):
+        parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
+        mask = df['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
+        df.loc[mask, 'Coefficiente'] = 1.30
+        st.rerun()
+
+with col_btn3:
+    if st.button("🔵 Pasta Semplice a 1.00"):
+        parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
+        mask_ripieni = df['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
+        df.loc[~mask_ripieni, 'Coefficiente'] = 1.00
+        st.rerun()
+
+with col_btn4:
+    if st.button("🟢 Gnocchi/Lasagne a 1.10"):
+        parole_medie = ['gnocchi', 'gnudi', 'lasagne', 'topetti', 'torta']
+        mask = df['Descrizione'].str.lower().str.contains('|'.join(parole_medie))
+        df.loc[mask, 'Coefficiente'] = 1.10
+        st.rerun()
 
 # Configurazione colonne per l'editor
 column_config = {
-    "Coefficiente": st.column_config.NumberColumn(
+    "Coefficiente": st.column_config.SelectboxColumn(
         "Coeff. Complessità",
-        help="1.00 = Standard. Es: 1.30 per prodotti ripieni complessi",
-        min_value=0.1,
-        max_value=5.0,
-        step=0.05,
-        format="%.2f"
+        help="1.00 = Standard | 1.10 = Leggermente complesso | 1.20 = Complesso | 1.30 = Molto complesso",
+        options=[1.00, 1.10, 1.20, 1.30],
+        default=1.00
     )
 }
 
@@ -199,18 +254,27 @@ df_editato = st.data_editor(
 df['Coefficiente'] = df_editato['Coefficiente']
 
 # ============================================================
-# MOTORE DI CALCOLO CON COMPLESSITÀ
+# MOTORE DI CALCOLO CON COMPLESSITÀ PONDERATA
 # ============================================================
-# Produzione Ponderata
+# Produzione Ponderata = Kg × Coefficiente
 df['Produzione_Ponderata'] = df['Produzione_2025'] * df['Coefficiente']
 Totale_Ponderato = df['Produzione_Ponderata'].sum()
 
-# Nuova % di incidenza basata sulla complessità
+# % di incidenza basata sulla complessità
 df['% Incidenza'] = (df['Produzione_Ponderata'] / Totale_Ponderato) * 100
 
 # Ripartizione costi
 if totale_costi_annuali > 0:
-    df['Quota_Costi'] = (df['% Incidenza'] / 100) * totale_costi_annuali
+    if modalita == "Su produzione totale (kg)":
+        df['Quota_Costi'] = (df['% Incidenza'] / 100) * totale_costi_annuali
+    else:
+        df['Quota_Costi'] = 0.0
+        for sede, pct in [('Montignoso', pct_montignoso), ('Grosseto', pct_grosseto)]:
+            mask = df['Luogo'] == sede
+            tot_sede_ponderato = df.loc[mask, 'Produzione_Ponderata'].sum()
+            quota_sede = totale_costi_annuali * (pct / 100)
+            df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_Ponderata'] / tot_sede_ponderato) * quota_sede
+
     df['Costo_per_Vaschetta'] = df['Quota_Costi'] / df['N_Vaschette']
     costo_medio_vaschetta = totale_costi_annuali / df['N_Vaschette'].sum()
 else:
@@ -225,19 +289,19 @@ st.markdown("---")
 st.subheader("📊 2. Risultati della Ripartizione")
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric(" Produzione Totale (Kg)", f"{df['Produzione_2025'].sum():,.2f}")
+col1.metric("📦 Produzione Totale 2025", f"{df['Produzione_2025'].sum():,.2f} kg")
 col2.metric("📦 Vaschette Totali", f"{df['N_Vaschette'].sum():,.0f}")
-col3.metric("⚖️ Produzione Ponderata", f"{Totale_Ponderato:,.2f}")
+col3.metric("️ Produzione Ponderata", f"{Totale_Ponderato:,.2f}")
 col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 # ============================================================
-# TABELLA FINALE DETTAGLIATA
+# FILTRI E TABELLA COMPLETA
 # ============================================================
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input("🔍 Cerca prodotto...", "")
+    ricerca = st.text_input(" Cerca prodotto...", "")
 
 df_vis = df.copy()
 if filtro_sede != "Tutte":
@@ -246,6 +310,8 @@ if ricerca:
     df_vis = df_vis[df_vis['Descrizione'].str.contains(ricerca, case=False, na=False)]
 
 df_vis = df_vis.sort_values('Quota_Costi', ascending=False)
+
+st.subheader(f"📋 Dettaglio Prodotti ({len(df_vis)} prodotti)")
 
 # Formattazione
 df_table = df_vis.copy()
@@ -256,7 +322,7 @@ df_table['% Incidenza'] = df_table['% Incidenza'].map(lambda x: f"{x:.3f}%")
 df_table['Quota Costi'] = df_table['Quota_Costi'].map(lambda x: f"€ {x:,.2f}")
 df_table['Costo/Vaschetta'] = df_table['Costo_per_Vaschetta'].map(lambda x: f"€ {x:.4f}")
 
-colonne_display = ['Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione', 
+colonne_display = ['Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione',
                    'Vaschette', 'Coefficiente', '% Incidenza', 'Quota Costi', 'Costo/Vaschetta']
 
 st.dataframe(
@@ -270,15 +336,63 @@ st.dataframe(
 )
 
 # ============================================================
+# TOP 20 PRODOTTI
+# ============================================================
+st.markdown("---")
+st.subheader(" Top 20 Prodotti per Volume di Produzione")
+
+top20 = df.nlargest(20, 'Produzione_2025')[['Luogo', 'Articolo', 'Descrizione',
+                                            'Produzione_2025', '% Incidenza']].copy()
+top20['Produzione_2025'] = top20['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
+top20['% Incidenza'] = top20['% Incidenza'].map(lambda x: f"{x:.3f}%")
+
+st.dataframe(
+    top20.rename(columns={
+        'Luogo': 'Sede', 'Articolo': 'Cod.', 'Descrizione': 'Prodotto',
+        'Produzione_2025': 'Produzione', '% Incidenza': '% Ripartizione'
+    }),
+    use_container_width=True, hide_index=True
+)
+
+# ============================================================
+# FORMULA DI CALCOLO
+# ============================================================
+with st.expander(" Vedi formula di calcolo"):
+    st.markdown("""
+    **Come funziona la ripartizione:**
+
+    1. **Numero Vaschette** = Produzione (kg) ÷ Peso unitario (kg)
+
+    2. **Produzione Ponderata** = Produzione (kg) × Coefficiente di Complessità
+
+    3. **% Ripartizione** = (Produzione Ponderata Prodotto ÷ Totale Ponderato) × 100
+
+    4. **Quota Costi** = % Ripartizione × Totale Costi Annualizzati
+
+    5. **Costo per Vaschetta** = Quota Costi ÷ Numero Vaschette
+
+    ---
+
+    **Esempio pratico:**
+    - Tortello Maremmano 250g: 28.389 kg → 113.556 vaschette
+    - Coefficiente: 1.30 (prodotto ripieno complesso)
+    - Produzione Ponderata: 28.389 × 1.30 = 36.905,70
+    - Se il totale ponderato è 250.000 → % Ripartizione = 14,76%
+    - Con € 800.000 di costi → Quota = € 118.080
+    - Costo per Vaschetta = € 118.080  113.556 = **€ 1,0398**
+    """)
+
+# ============================================================
 # EXPORT
 # ============================================================
 st.markdown("---")
 st.subheader("💾 Esporta Dati")
+
 csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
 st.download_button(
-    label=" Scarica analisi completa in CSV",
+    label="📥 Scarica analisi completa in CSV",
     data=csv,
-    file_name=f'pastai_costi_complessita_{datetime.now().strftime("%Y%m%d")}.csv',
+    file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
     mime='text/csv'
 )
 
