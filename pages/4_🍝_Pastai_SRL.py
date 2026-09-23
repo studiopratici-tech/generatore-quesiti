@@ -5,7 +5,7 @@ from datetime import datetime
 # ============================================================
 # CONFIGURAZIONE PAGINA
 # ============================================================
-st.set_page_config(page_title="🍝 Pastai SRL", page_icon="", layout="wide")
+st.set_page_config(page_title="Pastai SRL", page_icon="", layout="wide")
 
 st.title(" Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Inserisci i costi dal bilancio, definisci la complessità dei prodotti e ottieni il costo reale per vaschetta.")
