@@ -5,9 +5,9 @@ from datetime import datetime
 # ============================================================
 # CONFIGURAZIONE PAGINA
 # ============================================================
-st.set_page_config(page_title="Pastai SRL", page_icon="", layout="wide")
+st.set_page_config(page_title=" Pastai SRL", page_icon="🍝", layout="wide")
 
-st.title(" Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
+st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Inserisci i costi dal bilancio, definisci la complessità dei prodotti e ottieni il costo reale per vaschetta.")
 st.markdown("---")
 
@@ -30,7 +30,7 @@ montignoso_data = {
         'Tortello RS Ragù SG - 200g', 'Gnudo Burro Salvia SG - 200g',
         'Picio Ragù SG - 180g', 'Sfoglia Lasagna SG - 250g',
         'Lasagne Bolognese SG - 200g', 'Trofie Senza Glutine - 250g',
-        'Trofie Pesto 200g', 'Trofie Pesto SG - 180g',
+        'Trofie Pesto - 200g', 'Trofie Pesto SG - 180g',
         'Taglierini Ragù SG - 180g', 'Tortello RS Ragù SG - 180g',
         'Tortello RS Burro Salvia SG - 180g', 'Pansoti Noci SG - 180g',
         'Tordello Carne Ragù SG - 180g', 'Lasagne Bolognese SG - 250g',
@@ -132,7 +132,7 @@ st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicat
 
 # --- COSTI INDUSTRIALI ---
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Costi Industriali")
+st.sidebar.subheader("🔹 Costi Industriali")
 
 costo_materiali_vari = st.sidebar.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0)
 costo_servizi = st.sidebar.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0)
@@ -147,7 +147,7 @@ costo_altri_oneri = st.sidebar.number_input("737/748 - Altri oneri / Straordinar
 
 # --- COSTI DIRETTI (OPZIONALI) ---
 st.sidebar.markdown("---")
-st.sidebar.subheader(" Costi Diretti (opzionali)")
+st.sidebar.subheader("🔸 Costi Diretti (opzionali)")
 st.sidebar.markdown("_Inserire solo se si vuole ottenere il costo pieno completo_")
 
 costo_materie_prime = st.sidebar.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0)
@@ -197,41 +197,45 @@ if modalita == "Per sede separata":
     st.sidebar.info(f"Montignoso: {pct_montignoso}% | Grosseto: {pct_grosseto}%")
 
 # ============================================================
-# COEFFICIENTE DI COMPLESSITÀ (INTERATTIVO)
+# COEFFICIENTE DI COMPLESSITÀ (INTERATTIVO - CON SESSION STATE)
 # ============================================================
 st.subheader("⚙️ 1. Definizione Coefficiente di Complessità")
 st.markdown("Modifica il coefficiente direttamente nella tabella. **1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
 
-# Pulsanti rapidi per pre-compilazione
+# Inizializzazione session_state al primo caricamento
+if 'df_coeff' not in st.session_state:
+    st.session_state['df_coeff'] = df[['Luogo', 'Articolo', 'Descrizione', 'Peso', 'Produzione_2025', 'Coefficiente']].copy()
+
+# --- PULSANTI RAPIDI ---
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 
 with col_btn1:
     if st.button("🔄 Reset tutti a 1.00"):
-        df['Coefficiente'] = 1.00
+        st.session_state['df_coeff']['Coefficiente'] = 1.00
         st.rerun()
 
 with col_btn2:
     if st.button("🟡 Imposta Ripieni a 1.30"):
         parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
-        mask = df['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
-        df.loc[mask, 'Coefficiente'] = 1.30
+        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
+        st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.30
         st.rerun()
 
 with col_btn3:
-    if st.button("🔵 Pasta Semplice a 1.00"):
+    if st.button(" Pasta Semplice a 1.00"):
         parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
-        mask_ripieni = df['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
-        df.loc[~mask_ripieni, 'Coefficiente'] = 1.00
+        mask_ripieni = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
+        st.session_state['df_coeff'].loc[~mask_ripieni, 'Coefficiente'] = 1.00
         st.rerun()
 
 with col_btn4:
     if st.button("🟢 Gnocchi/Lasagne a 1.10"):
         parole_medie = ['gnocchi', 'gnudi', 'lasagne', 'topetti', 'torta']
-        mask = df['Descrizione'].str.lower().str.contains('|'.join(parole_medie))
-        df.loc[mask, 'Coefficiente'] = 1.10
+        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_medie))
+        st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.10
         st.rerun()
 
-# Configurazione colonne per l'editor
+# --- DATA EDITOR ---
 column_config = {
     "Coefficiente": st.column_config.SelectboxColumn(
         "Coeff. Complessità",
@@ -241,16 +245,19 @@ column_config = {
     )
 }
 
-# Data Editor: permette di modificare il coefficiente
 df_editato = st.data_editor(
-    df[['Luogo', 'Articolo', 'Descrizione', 'Peso', 'Produzione_2025', 'Coefficiente']],
+    st.session_state['df_coeff'],
     column_config=column_config,
     use_container_width=True,
     hide_index=True,
-    num_rows="fixed"
+    num_rows="fixed",
+    key="editor_coeff"
 )
 
-# Aggiorniamo il dataframe principale con i coefficienti modificati
+# Aggiorna session_state con le modifiche dell'utente
+st.session_state['df_coeff'] = df_editato
+
+# Aggiorna il dataframe principale con i coefficienti modificati
 df['Coefficiente'] = df_editato['Coefficiente']
 
 # ============================================================
@@ -357,7 +364,7 @@ st.dataframe(
 # ============================================================
 # FORMULA DI CALCOLO
 # ============================================================
-with st.expander(" Vedi formula di calcolo"):
+with st.expander("📐 Vedi formula di calcolo"):
     st.markdown("""
     **Come funziona la ripartizione:**
 
@@ -379,7 +386,7 @@ with st.expander(" Vedi formula di calcolo"):
     - Produzione Ponderata: 28.389 × 1.30 = 36.905,70
     - Se il totale ponderato è 250.000 → % Ripartizione = 14,76%
     - Con € 800.000 di costi → Quota = € 118.080
-    - Costo per Vaschetta = € 118.080  113.556 = **€ 1,0398**
+    - Costo per Vaschetta = € 118.080 ÷ 113.556 = **€ 1,0398**
     """)
 
 # ============================================================
