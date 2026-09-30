@@ -5,7 +5,7 @@ from datetime import datetime
 # ============================================================
 # 1. CONFIGURAZIONE PAGINA
 # ============================================================
-st.set_page_config(page_title="🍝 Pastai SRL", page_icon="🍝", layout="wide")
+st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
 st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Strumento di controllo di gestione basato sulla produzione 2025 e costi attuali.")
