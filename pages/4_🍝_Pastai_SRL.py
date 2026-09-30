@@ -203,7 +203,7 @@ if "Opzione A" in modalita_inserimento:
         }
 
     # --- EXPANDER GROSSETO ---
-    with st.expander(" SEDE GROSSETO", expanded=False):
+    with st.expander("🏭 SEDE GROSSETO", expanded=False):
         st.markdown("_Costi già attribuiti a Grosseto_")
         
         col1, col2 = st.columns(2)
