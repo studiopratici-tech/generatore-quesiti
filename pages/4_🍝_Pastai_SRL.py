@@ -5,16 +5,15 @@ from datetime import datetime
 # ============================================================
 # 1. CONFIGURAZIONE PAGINA
 # ============================================================
-st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
+st.set_page_config(page_title="🍝 Pastai SRL", page_icon="🍝", layout="wide")
 
 st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Strumento di controllo di gestione basato sulla produzione 2025 e costi attuali.")
 st.markdown("---")
 
 # ============================================================
-# 2. DATI DI PRODUZIONE 2025 (Fissi, base solida del calcolo)
+# 2. DATI DI PRODUZIONE 2025 (Fissi)
 # ============================================================
-# Montignoso (30 prodotti - Linea Senza Glutine)
 montignoso_data = {
     'Luogo': ['Montignoso'] * 30,
     'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708", 
@@ -47,7 +46,6 @@ montignoso_data = {
                         4.68, 8.50, 193.20, 204.80, 1.98, 1.50]
 }
 
-# Grosseto (61 prodotti - Linea Tradizionale)
 grosseto_data = {
     'Luogo': ['Grosseto'] * 61,
     'Articolo': ["'1001", "'1003", "'1005", "'1007", "'1009", "'1101", "'1109", "'1110", "'1111", "'1113",
@@ -91,20 +89,17 @@ grosseto_data = {
                         1381.75, 147.50, 3018.50, 793.75, 4634.25, 1265.00, 1168.00, 136.20, 329.00, 8814.50, 10607.75]
 }
 
-# Unione dei dataframe e calcoli base preliminari
 df_mont = pd.DataFrame(montignoso_data)
 df_gros = pd.DataFrame(grosseto_data)
 df = pd.concat([df_mont, df_gros], ignore_index=True)
 
-# Calcolo automatico del numero di vaschette (Produzione kg / Peso unitario kg)
 df['N_Vaschette'] = df['Produzione_2025'] / df['Peso']
-df['Coefficiente'] = 1.00  # Default
+df['Coefficiente'] = 1.00
 
 # ============================================================
-# 3. SIDEBAR: INSERIMENTO COSTI (Logica Amministrativa)
+# 3. SIDEBAR: CONTROLLI ESSENZIALI (senza expander)
 # ============================================================
-st.sidebar.header(" INSERIMENTO COSTI DAL BILANCIO")
-st.sidebar.markdown("Inserisci i valori manualmente. Lascia a 0 le voci non interessate.")
+st.sidebar.header("💰 INSERIMENTO COSTI")
 st.sidebar.markdown("---")
 
 # --- 3.1 Annualizzazione ---
@@ -112,7 +107,7 @@ st.sidebar.subheader("📅 Periodo di riferimento")
 periodo = st.sidebar.selectbox(
     "Il bilancio copre:",
     ["Annuale (x1)", "Semestrale (x2)", "Trimestrale (x4)", "Bimestrale (x6)", "Personalizzato"],
-    index=1  # Default su semestrale come il bilancio attuale
+    index=1
 )
 
 if periodo == "Personalizzato":
@@ -121,140 +116,160 @@ else:
     moltiplicatore_map = {"Annuale (x1)": 1, "Semestrale (x2)": 2, "Trimestrale (x4)": 4, "Bimestrale (x6)": 6}
     moltiplicatore = moltiplicatore_map[periodo]
 
-st.sidebar.info(f" I costi inseriti verranno moltiplicati per **{moltiplicatore}**.")
+st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicatore}**.")
 
 # --- 3.2 Toggle Modalità di Inserimento ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("⚙️ Modalità di inserimento")
+st.sidebar.subheader("️ Modalità di inserimento")
 modalita_inserimento = st.sidebar.radio(
-    "Come vuoi inserire i costi di produzione?",
+    "Come vuoi inserire i costi?",
     [
-        "Opzione A: Inserimento diretto per sede (consigliato)",
-        "Opzione B: Totale aziendale (ripartizione automatica per kg)"
+        "Opzione A: Inserimento diretto per sede",
+        "Opzione B: Totale aziendale (ripartizione per kg)"
     ],
     index=0
 )
 
-# ============================================================
-# 3.3 BLOCCO A: COSTI PER SEDE (con expander)
-# ============================================================
-
-# Funzione helper per creare i campi di una sede
-def crea_campi_sede(nome_sede, icona):
-    st.sidebar.markdown("---")
-    with st.sidebar.expander(f"{icona} {nome_sede}", expanded=True):
-        st.sidebar.markdown(f"_Costi già attribuiti a {nome_sede}_")
-        
-        c702 = st.sidebar.number_input(f"702 - Materie prime e imballaggi ({nome_sede})", min_value=0.0, value=0.0, step=1000.0, help="Opzionale - Solo se si vuole il costo pieno completo")
-        c704 = st.sidebar.number_input(f"704 - Acquisto materiali vari ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c709 = st.sidebar.number_input(f"709 - Servizi generali-amministrativi ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c713 = st.sidebar.number_input(f"713 - Costi gestione autoveicoli ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c714 = st.sidebar.number_input(f"714 - Manutenzioni ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c715 = st.sidebar.number_input(f"715 - Altri costi per servizi ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c717 = st.sidebar.number_input(f"717 - Costi godimento beni di terzi ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c720 = st.sidebar.number_input(f"720 - Spese per lavoro dipendente ({nome_sede})", min_value=0.0, value=0.0, step=1000.0, help="Opzionale - Solo se si vuole il costo pieno completo")
-        c725 = st.sidebar.number_input(f"725 - Ammort. immobilizzazioni immateriali ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c727 = st.sidebar.number_input(f"727 - Ammort. immobilizzazioni materiali ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c735 = st.sidebar.number_input(f"735 - Imposte e tasse ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        c737 = st.sidebar.number_input(f"737/748 - Altri oneri / Straordinari ({nome_sede})", min_value=0.0, value=0.0, step=100.0)
-        
-        totale_sede = c702 + c704 + c709 + c713 + c714 + c715 + c717 + c720 + c725 + c727 + c735 + c737
-        st.sidebar.markdown(f"**Totale {nome_sede}: € {totale_sede:,.2f}**")
-        
-        return {
-            '702': c702, '704': c704, '709': c709, '713': c713,
-            '714': c714, '715': c715, '717': c717, '720': c720,
-            '725': c725, '727': c727, '735': c735, '737': c737,
-            'totale': totale_sede
-        }
-
-# Funzione helper per creare i campi del totale aziendale (Opzione B)
-def crea_campi_aziendali():
-    st.sidebar.markdown("---")
-    with st.sidebar.expander("🏢 Costi Totali Aziendali", expanded=True):
-        st.sidebar.markdown("_Verranno ripartiti tra le sedi in base ai kg prodotti_")
-        
-        c702 = st.sidebar.number_input("702 - Materie prime e imballaggi (Totale)", min_value=0.0, value=0.0, step=1000.0)
-        c704 = st.sidebar.number_input("704 - Acquisto materiali vari (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c709 = st.sidebar.number_input("709 - Servizi generali-amministrativi (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c713 = st.sidebar.number_input("713 - Costi gestione autoveicoli (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c714 = st.sidebar.number_input("714 - Manutenzioni (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c715 = st.sidebar.number_input("715 - Altri costi per servizi (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c717 = st.sidebar.number_input("717 - Costi godimento beni di terzi (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c720 = st.sidebar.number_input("720 - Spese per lavoro dipendente (Totale)", min_value=0.0, value=0.0, step=1000.0)
-        c725 = st.sidebar.number_input("725 - Ammort. immobilizzazioni immateriali (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c727 = st.sidebar.number_input("727 - Ammort. immobilizzazioni materiali (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c735 = st.sidebar.number_input("735 - Imposte e tasse (Totale)", min_value=0.0, value=0.0, step=100.0)
-        c737 = st.sidebar.number_input("737/748 - Altri oneri / Straordinari (Totale)", min_value=0.0, value=0.0, step=100.0)
-        
-        totale_aziendale = c702 + c704 + c709 + c713 + c714 + c715 + c717 + c720 + c725 + c727 + c735 + c737
-        st.sidebar.markdown(f"**Totale Aziendale: € {totale_aziendale:,.2f}**")
-        
-        return {
-            '702': c702, '704': c704, '709': c709, '713': c713,
-            '714': c714, '715': c715, '717': c717, '720': c720,
-            '725': c725, '727': c727, '735': c735, '737': c737,
-            'totale': totale_aziendale
-        }
-
-# Inizializzazione variabili
-costi_montignoso = None
-costi_grosseto = None
-costi_aziendali = None
-
-if "Opzione A" in modalita_inserimento:
-    costi_montignoso = crea_campi_sede("Montignoso", "🏭")
-    costi_grosseto = crea_campi_sede("Grosseto", "🏭")
-else:
-    costi_aziendali = crea_campi_aziendali()
-
-# ============================================================
-# 3.4 BLOCCO B: COSTI COMUNI DA RIPARTIRE (Solo 3 voci)
-# ============================================================
+# --- 3.3 COSTI COMUNI (sempre visibili nella sidebar) ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("🏢 Blocco B: Costi Comuni da Ripartire")
-st.sidebar.markdown("_Trasporti vettore, Interessi passivi, Scontistica promozionale_")
+st.sidebar.subheader("🏢 Costi Comuni da Ripartire")
+st.sidebar.markdown("_Trasporti vettore, Interessi passivi, Scontistica_")
 
-with st.sidebar.expander(" Costi Comuni", expanded=True):
-    costo_trasporti_vettore = st.sidebar.number_input(
-        "Trasporti a mezzo vettore (715.00002 + 715.00003)",
-        min_value=0.0, value=0.0, step=100.0,
-        help="Costi di trasporto non attribuibili a una sede specifica"
-    )
-    costo_interessi_passivi = st.sidebar.number_input(
-        "Interessi passivi da finanziarie (740)",
-        min_value=0.0, value=0.0, step=100.0,
-        help="Interessi su finanziamenti bancari e altri oneri finanziari"
-    )
-    costo_scontistica = st.sidebar.number_input(
-        "Scontistica promozionale (715.01001)",
-        min_value=0.0, value=0.0, step=100.0,
-        help="Contributi promozionali ai clienti"
-    )
-    
-    totale_costi_comuni = costo_trasporti_vettore + costo_interessi_passivi + costo_scontistica
-    st.sidebar.markdown(f"**Totale Costi Comuni: € {totale_costi_comuni:,.2f}**")
+costo_trasporti_vettore = st.sidebar.number_input(
+    "Trasporti a mezzo vettore",
+    min_value=0.0, value=0.0, step=100.0
+)
+costo_interessi_passivi = st.sidebar.number_input(
+    "Interessi passivi da finanziarie",
+    min_value=0.0, value=0.0, step=100.0
+)
+costo_scontistica = st.sidebar.number_input(
+    "Scontistica promozionale",
+    min_value=0.0, value=0.0, step=100.0
+)
 
-# --- Slider per la ripartizione dei costi comuni ---
+totale_costi_comuni = costo_trasporti_vettore + costo_interessi_passivi + costo_scontistica
+
+# --- Slider ripartizione costi comuni ---
 st.sidebar.markdown("---")
-st.sidebar.subheader("️ Chiave di Ripartizione Costi Comuni")
+st.sidebar.subheader("️ Ripartizione Costi Comuni")
 pct_montignoso_comuni = st.sidebar.slider(
     "% Costi Comuni su Montignoso", 
-    0, 100, 15,  # Default 15% basato sulla produzione storica
-    help="Percentuale dei costi comuni da attribuire a Montignoso"
+    0, 100, 15
 )
 pct_grosseto_comuni = 100 - pct_montignoso_comuni
 st.sidebar.info(f"Montignoso: {pct_montignoso_comuni}% | Grosseto: {pct_grosseto_comuni}%")
 
 # ============================================================
-# 3.5 CALCOLO TOTALI PER SEDE (Post-Annualizzazione)
+# 4. CORPO PRINCIPALE: INSERIMENTO COSTI PER SEDE (CON EXPANDER)
+# ============================================================
+st.subheader(" Inserimento Costi per Sede")
+st.markdown("Inserisci i valori dal bilancio analitico. Lascia a 0 le voci non interessate.")
+
+# Variabili per i costi
+costi_montignoso = None
+costi_grosseto = None
+costi_aziendali = None
+
+if "Opzione A" in modalita_inserimento:
+    # --- EXPANDER MONTIGNOSO ---
+    with st.expander("🏭 SEDE MONTIGNOSO", expanded=False):
+        st.markdown("_Costi già attribuiti a Montignoso_")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            m_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="m_702")
+            m_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="m_704")
+            m_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="m_709")
+            m_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="m_713")
+            m_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="m_714")
+            m_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="m_715")
+        with col2:
+            m_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="m_717")
+            m_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="m_720")
+            m_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="m_725")
+            m_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="m_727")
+            m_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="m_735")
+            m_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="m_737")
+        
+        totale_montignoso = m_702 + m_704 + m_709 + m_713 + m_714 + m_715 + m_717 + m_720 + m_725 + m_727 + m_735 + m_737
+        st.markdown(f"**💰 Totale Montignoso: € {totale_montignoso:,.2f}**")
+        
+        costi_montignoso = {
+            '702': m_702, '704': m_704, '709': m_709, '713': m_713,
+            '714': m_714, '715': m_715, '717': m_717, '720': m_720,
+            '725': m_725, '727': m_727, '735': m_735, '737': m_737,
+            'totale': totale_montignoso
+        }
+
+    # --- EXPANDER GROSSETO ---
+    with st.expander(" SEDE GROSSETO", expanded=False):
+        st.markdown("_Costi già attribuiti a Grosseto_")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            g_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="g_702")
+            g_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="g_704")
+            g_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="g_709")
+            g_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="g_713")
+            g_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="g_714")
+            g_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="g_715")
+        with col2:
+            g_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="g_717")
+            g_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="g_720")
+            g_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="g_725")
+            g_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="g_727")
+            g_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="g_735")
+            g_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="g_737")
+        
+        totale_grosseto = g_702 + g_704 + g_709 + g_713 + g_714 + g_715 + g_717 + g_720 + g_725 + g_727 + g_735 + g_737
+        st.markdown(f"**💰 Totale Grosseto: € {totale_grosseto:,.2f}**")
+        
+        costi_grosseto = {
+            '702': g_702, '704': g_704, '709': g_709, '713': g_713,
+            '714': g_714, '715': g_715, '717': g_717, '720': g_720,
+            '725': g_725, '727': g_727, '735': g_735, '737': g_737,
+            'totale': totale_grosseto
+        }
+
+else:
+    # --- EXPANDER COSTI AZIENDALI (Opzione B) ---
+    with st.expander("🏢 COSTI TOTALI AZIENDALI", expanded=False):
+        st.markdown("_Verranno ripartiti tra le sedi in base ai kg prodotti_")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            a_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="a_702")
+            a_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="a_704")
+            a_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="a_709")
+            a_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="a_713")
+            a_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="a_714")
+            a_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="a_715")
+        with col2:
+            a_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="a_717")
+            a_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="a_720")
+            a_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="a_725")
+            a_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="a_727")
+            a_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="a_735")
+            a_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="a_737")
+        
+        totale_aziendale = a_702 + a_704 + a_709 + a_713 + a_714 + a_715 + a_717 + a_720 + a_725 + a_727 + a_735 + a_737
+        st.markdown(f"**💰 Totale Aziendale: € {totale_aziendale:,.2f}**")
+        
+        costi_aziendali = {
+            '702': a_702, '704': a_704, '709': a_709, '713': a_713,
+            '714': a_714, '715': a_715, '717': a_717, '720': a_720,
+            '725': a_725, '727': a_727, '735': a_735, '737': a_737,
+            'totale': totale_aziendale
+        }
+
+# ============================================================
+# 5. CALCOLO TOTALI PER SEDE
 # ============================================================
 if "Opzione A" in modalita_inserimento:
-    # I costi sono già divisi per sede
     totale_costi_montignoso_periodo = costi_montignoso['totale']
     totale_costi_grosseto_periodo = costi_grosseto['totale']
 else:
-    # I costi sono totali aziendali, li ripartiamo per kg
     totale_aziendale_periodo = costi_aziendali['totale']
     kg_montignoso = df[df['Luogo'] == 'Montignoso']['Produzione_2025'].sum()
     kg_grosseto = df[df['Luogo'] == 'Grosseto']['Produzione_2025'].sum()
@@ -279,24 +294,16 @@ budget_montignoso = budget_montignoso_periodo * moltiplicatore
 budget_grosseto = budget_grosseto_periodo * moltiplicatore
 totale_costi_annuali = (totale_costi_montignoso_periodo + totale_costi_grosseto_periodo + totale_costi_comuni) * moltiplicatore
 
-st.sidebar.markdown("---")
-st.sidebar.metric("💰 Totale costi inseriti (periodo)", f"€ {(totale_costi_montignoso_periodo + totale_costi_grosseto_periodo + totale_costi_comuni):,.2f}")
-st.sidebar.metric("📈 Totale annualizzato", f"€ {totale_costi_annuali:,.2f}")
-st.sidebar.divider()
-st.sidebar.metric("🏭 Budget Annuo Montignoso", f"€ {budget_montignoso:,.2f}")
-st.sidebar.metric("🏭 Budget Annuo Grosseto", f"€ {budget_grosseto:,.2f}")
-
 # ============================================================
-# 4. COEFFICIENTE DI COMPLESSITÀ (Logica Interattiva)
+# 6. COEFFICIENTE DI COMPLESSITÀ
 # ============================================================
-st.subheader("⚙️ 1. Definizione Coefficiente di Complessità")
+st.markdown("---")
+st.subheader("⚙️ Coefficiente di Complessità")
 st.markdown("Modifica il coefficiente direttamente nella tabella. **1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
 
-# Inizializzazione Session State per persistenza dati durante i rerun
 if 'df_coeff' not in st.session_state:
     st.session_state['df_coeff'] = df[['Luogo', 'Articolo', 'Descrizione', 'Peso', 'Produzione_2025', 'Coefficiente']].copy()
 
-# Pulsanti rapidi per pre-compilazione intelligente
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 
 with col_btn1:
@@ -312,7 +319,7 @@ with col_btn2:
         st.rerun()
 
 with col_btn3:
-    if st.button("🔵 Pasta Semplice a 1.00"):
+    if st.button(" Pasta Semplice a 1.00"):
         parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
         mask_ripieni = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
         st.session_state['df_coeff'].loc[~mask_ripieni, 'Coefficiente'] = 1.00
@@ -325,7 +332,6 @@ with col_btn4:
         st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.10
         st.rerun()
 
-# Data Editor interattivo
 column_config = {
     "Coefficiente": st.column_config.SelectboxColumn(
         "Coeff. Complessità",
@@ -344,56 +350,48 @@ df_editato = st.data_editor(
     key="editor_coeff"
 )
 
-# Aggiornamento stato e dataframe principale
 st.session_state['df_coeff'] = df_editato
 df['Coefficiente'] = df_editato['Coefficiente']
 
 # ============================================================
-# 5. MOTORE DI CALCOLO (Ripartizione per Sede)
+# 7. MOTORE DI CALCOLO
 # ============================================================
-# Calcolo Produzione Ponderata (Kg * Coefficiente di Complessità)
 df['Produzione_Ponderata'] = df['Produzione_2025'] * df['Coefficiente']
 
-# Inizializzazione colonne risultati
 df['Quota_Costi'] = 0.0
 df['Costo_per_Vaschetta'] = 0.0
 
-# Loop di ripartizione per ogni sede
 for sede, budget_sede in [('Montignoso', budget_montignoso), ('Grosseto', budget_grosseto)]:
     mask = df['Luogo'] == sede
     tot_ponderato_sede = df.loc[mask, 'Produzione_Ponderata'].sum()
     
-    # Se c'è produzione e budget, ripartisci
     if tot_ponderato_sede > 0 and budget_sede > 0:
-        # La quota di costo è proporzionale alla produzione ponderata del prodotto rispetto al totale della sede
         df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_Ponderata'] / tot_ponderato_sede) * budget_sede
-        # Il costo per vaschetta è la quota divisa per il numero reale di vaschette
         df.loc[mask, 'Costo_per_Vaschetta'] = df.loc[mask, 'Quota_Costi'] / df.loc[mask, 'N_Vaschette']
 
-# Calcolo costo medio aziendale
 totale_vaschette = df['N_Vaschette'].sum()
 costo_medio_vaschetta = totale_costi_annuali / totale_vaschette if totale_vaschette > 0 else 0.0
 
 # ============================================================
-# 6. DASHBOARD KPI
+# 8. DASHBOARD KPI
 # ============================================================
 st.markdown("---")
-st.subheader("📊 2. Risultati della Ripartizione")
+st.subheader("📊 Risultati della Ripartizione")
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("📦 Produzione Totale 2025", f"{df['Produzione_2025'].sum():,.2f} kg")
 col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
 col3.metric("⚖️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,.2f}")
-col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
+col4.metric(" Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 # ============================================================
-# 7. TABELLA DETTAGLIATA E FILTRI
+# 9. TABELLA DETTAGLIATA
 # ============================================================
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input(" Cerca prodotto...", "")
+    ricerca = st.text_input("🔍 Cerca prodotto...", "")
 
 df_vis = df.copy()
 if filtro_sede != "Tutte":
@@ -405,13 +403,11 @@ df_vis = df_vis.sort_values('Quota_Costi', ascending=False)
 
 st.subheader(f"📋 Dettaglio Prodotti ({len(df_vis)} prodotti)")
 
-# Formattazione valori per la tabella
 df_table = df_vis.copy()
 df_table['Peso_kg'] = df_table['Peso'].map(lambda x: f"{x} kg")
 df_table['Produzione'] = df_table['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
 df_table['Vaschette'] = df_table['N_Vaschette'].map(lambda x: f"{x:,.0f}")
 
-# Calcolo % incidenza per sede
 def calcola_pct_sede(row):
     mask_sede = df['Luogo'] == row['Luogo']
     tot_ponderato_sede = df.loc[mask_sede, 'Produzione_Ponderata'].sum()
@@ -437,7 +433,7 @@ st.dataframe(
 )
 
 # ============================================================
-# 8. TOP 20 PRODOTTI
+# 10. TOP 20 PRODOTTI
 # ============================================================
 st.markdown("---")
 st.subheader("🏆 Top 20 Prodotti per Volume di Produzione")
@@ -453,38 +449,30 @@ st.dataframe(
 )
 
 # ============================================================
-# 9. FORMULA DI CALCOLO (Spiegazione)
+# 11. FORMULA DI CALCOLO
 # ============================================================
 with st.expander("📐 Vedi formula di calcolo e logica applicata"):
     st.markdown("""
-    **Logica di Ripartizione (basata su indicazione Amministrativa):**
+    **Logica di Ripartizione:**
     
     1. **Separazione Costi:** I costi di Produzione/Confezionamento vengono attribuiti direttamente alla sede di competenza (Opzione A) o ripartiti per kg (Opzione B). I costi Comuni (Trasporti vettore, Interessi passivi, Scontistica promozionale) vengono ripartiti tra le sedi in base alla percentuale definita dallo slider.
     
-    2. **Produzione Ponderata:** Per ogni prodotto: `Produzione (kg) × Coefficiente di Complessità`. Questo permette di caricare più costi sui prodotti che richiedono più lavoro (es. ripieni), anche se pesano uguale ad altri.
+    2. **Produzione Ponderata:** Per ogni prodotto: `Produzione (kg) × Coefficiente di Complessità`.
     
     3. **Ripartizione per Sede:** I costi totali di ogni sede (Diretti + Quota Comuni) vengono ripartiti sui prodotti di *quella specifica sede* in base alla loro % di Produzione Ponderata.
     
     4. **Costo per Vaschetta:** `Quota Costi Assegnata al Prodotto ÷ Numero Vaschette Prodotte`.
-    
-    ---
-    
-    **Esempio pratico:**
-    - Se il budget totale di Grosseto (dopo ripartizione comuni) è € 500.000.
-    - Il Tortello Maremmano 250g ha una produzione ponderata che rappresenta il 15% del totale di Grosseto.
-    - Quota Costi Tortello = 15% × € 500.000 = € 75.000.
-    - Se ha prodotto 113.556 vaschette, il Costo per Vaschetta = € 75.000 ÷ 113.556 = **€ 0,6605**.
     """)
 
 # ============================================================
-# 10. EXPORT DATI
+# 12. EXPORT
 # ============================================================
 st.markdown("---")
-st.subheader(" Esporta Dati")
+st.subheader("💾 Esporta Dati")
 
 csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
 st.download_button(
-    label=" Scarica analisi completa in CSV",
+    label="📥 Scarica analisi completa in CSV",
     data=csv,
     file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
     mime='text/csv'
