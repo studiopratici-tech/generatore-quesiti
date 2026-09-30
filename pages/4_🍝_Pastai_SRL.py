@@ -368,12 +368,18 @@ if totale_costi_annuali > 0:
         |  Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
         """)
 
-    # --- GRAFICO 2: Top 10 Prodotti per Costo/Vaschetta ---
-    with col_graf2:
-        st.markdown("#####  Top 10 Prodotti per Costo/Vaschetta")
-        top10 = df.nlargest(10, 'Costo_per_Vaschetta')[['Descrizione', 'Costo_per_Vaschetta']].copy()
-        top10['Descrizione_breve'] = top10['Descrizione'].str[:25]
-        st.bar_chart(top10.set_index('Descrizione_breve'), use_container_width=True)
+  # --- GRAFICO 2: Top 10 Prodotti per Costo/Vaschetta ---
+with col_graf2:
+    st.markdown("##### 📊 Top 10 Prodotti per Costo/Vaschetta")
+    top10 = df.nlargest(10, 'Costo_per_Vaschetta').copy()
+    
+    # Crea DataFrame pulito per il grafico
+    chart_data = pd.DataFrame({
+        'Prodotto': top10['Descrizione'].str[:30],
+        'Costo/Vaschetta (€)': top10['Costo_per_Vaschetta']
+    }).set_index('Prodotto')
+    
+    st.bar_chart(chart_data, use_container_width=True)
 
     # --- GRAFICO 3: Confronto Sedi ---
     st.markdown("---")
