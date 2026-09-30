@@ -344,105 +344,79 @@ col3.metric("⚖️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,
 col4.metric(" Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 # ============================================================
-# 9. GRAFICI ANALITICI (NOVITÀ)
+# 9. GRAFICI ANALITICI (con funzioni native Streamlit)
 # ============================================================
 if totale_costi_annuali > 0:
     st.markdown("---")
     st.subheader("📈 Analisi Grafica dei Costi")
     
-    # --- GRAFICO 1: TORTA - Distribuzione Costi tra Sedi ---
+    # --- GRAFICO 1: Distribuzione Costi tra Sedi ---
     col_graf1, col_graf2 = st.columns(2)
     
     with col_graf1:
         st.markdown("##### 🥧 Distribuzione Costi tra Sedi")
-        fig_torta = go.Figure(data=[go.Pie(
-            labels=['Montignoso', 'Grosseto'],
-            values=[budget_montignoso, budget_grosseto],
-            hole=0.4,
-            marker_colors=['#FF6B6B', '#4ECDC4'],
-            textinfo='label+percent+value',
-            texttemplate='%{label}<br>%{percent:.1%}<br>€ %{value:,.0f}',
-            hovertemplate='%{label}: € %{value:,.2f} (%{percent:.1%})<extra></extra>'
-        )])
-        fig_torta.update_layout(
-            showlegend=True,
-            height=400,
-            margin=dict(t=20, b=20, l=20, r=20),
-            font=dict(size=12)
-        )
-        st.plotly_chart(fig_torta, use_container_width=True)
+        df_sedi = pd.DataFrame({
+            'Sede': ['Montignoso', 'Grosseto'],
+            'Costi (€)': [budget_montignoso, budget_grosseto]
+        })
+        st.bar_chart(df_sedi.set_index('Sede'), use_container_width=True)
+        
+        # Mostra percentuali in tabella
+        pct_mont = (budget_montignoso / totale_costi_annuali) * 100 if totale_costi_annuali > 0 else 0
+        pct_gros = (budget_grosseto / totale_costi_annuali) * 100 if totale_costi_annuali > 0 else 0
+        st.markdown(f"""
+        | Sede | Costi | % sul Totale |
+        |------|-------|--------------|
+        | 🏭 Montignoso | € {budget_montignoso:,.2f} | {pct_mont:.1f}% |
+        | 🏭 Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
+        """)
     
-    # --- GRAFICO 2: BARRE - Top 10 Prodotti per Costo/Vaschetta ---
+    # --- GRAFICO 2: Top 10 Prodotti per Costo/Vaschetta ---
     with col_graf2:
         st.markdown("##### 📊 Top 10 Prodotti per Costo/Vaschetta")
-        top10_costo = df.nlargest(10, 'Costo_per_Vaschetta')[['Descrizione', 'Costo_per_Vaschetta', 'Luogo']].copy()
-        top10_costo['Descrizione_breve'] = top10_costo['Descrizione'].str[:30] + '...'
-        
-        fig_barre = px.bar(
-            top10_costo,
-            x='Descrizione_breve',
-            y='Costo_per_Vaschetta',
-            color='Luogo',
-            color_discrete_map={'Montignoso': '#FF6B6B', 'Grosseto': '#4ECDC4'},
-            text='Costo_per_Vaschetta',
-            hover_data={'Descrizione': True, 'Luogo': True, 'Costo_per_Vaschetta': ':.4f'}
-        )
-        fig_barre.update_traces(texttemplate='€ %{text:.4f}', textposition='outside')
-        fig_barre.update_layout(
-            xaxis_title='',
-            yaxis_title='€ per vaschetta',
-            height=400,
-            margin=dict(t=20, b=80, l=20, r=20),
-            showlegend=True,
-            xaxis=dict(tickangle=-45)
-        )
-        st.plotly_chart(fig_barre, use_container_width=True)
+        top10 = df.nlargest(10, 'Costo_per_Vaschetta')[['Descrizione', 'Costo_per_Vaschetta']].copy()
+        top10['Descrizione_breve'] = top10['Descrizione'].str[:25]
+        st.bar_chart(top10.set_index('Descrizione_breve'), use_container_width=True)
     
-    # --- GRAFICO 3: BARRE ORIZZONTALI - Confronto Sedi ---
+    # --- GRAFICO 3: Confronto Sedi ---
     st.markdown("---")
-    st.markdown("#####  Confronto Produzione e Costi tra Sedi")
+    st.markdown("##### 🏭 Confronto Produzione e Costi tra Sedi")
     
     kg_mont = df[df['Luogo'] == 'Montignoso']['Produzione_2025'].sum()
     kg_gros = df[df['Luogo'] == 'Grosseto']['Produzione_2025'].sum()
     vasch_mont = df[df['Luogo'] == 'Montignoso']['N_Vaschette'].sum()
     vasch_gros = df[df['Luogo'] == 'Grosseto']['N_Vaschette'].sum()
-    prod_mont = len(df[df['Luogo'] == 'Montignoso'])
-    prod_gros = len(df[df['Luogo'] == 'Grosseto'])
     costo_medio_mont = budget_montignoso / vasch_mont if vasch_mont > 0 else 0
     costo_medio_gros = budget_grosseto / vasch_gros if vasch_gros > 0 else 0
     
-    fig_confronto = go.Figure()
+    col_c1, col_c2, col_c3 = st.columns(3)
     
-    # Produzione kg
-    fig_confronto.add_trace(go.Bar(
-        name='Produzione (kg)',
-        x=['Montignoso', 'Grosseto'],
-        y=[kg_mont, kg_gros],
-        marker_color='#FFB6C1',
-        yaxis='y'
-    ))
+    with col_c1:
+        st.markdown("**Produzione (kg)**")
+        df_kg = pd.DataFrame({
+            'Sede': ['Montignoso', 'Grosseto'],
+            'Kg': [kg_mont, kg_gros]
+        })
+        st.bar_chart(df_kg.set_index('Sede'), use_container_width=True)
     
-    # Costo medio per vaschetta
-    fig_confronto.add_trace(go.Bar(
-        name='Costo medio/vaschetta (€)',
-        x=['Montignoso', 'Grosseto'],
-        y=[costo_medio_mont, costo_medio_gros],
-        marker_color='#87CEEB',
-        yaxis='y2'
-    ))
+    with col_c2:
+        st.markdown("**N. Vaschette**")
+        df_vasch = pd.DataFrame({
+            'Sede': ['Montignoso', 'Grosseto'],
+            'Vaschette': [vasch_mont, vasch_gros]
+        })
+        st.bar_chart(df_vasch.set_index('Sede'), use_container_width=True)
     
-    fig_confronto.update_layout(
-        barmode='group',
-        height=400,
-        yaxis=dict(title='Kg prodotti', side='left'),
-        yaxis2=dict(title='€ per vaschetta', overlaying='y', side='right'),
-        margin=dict(t=20, b=20, l=60, r=60),
-        showlegend=True
-    )
-    st.plotly_chart(fig_confronto, use_container_width=True)
+    with col_c3:
+        st.markdown("**Costo medio/vaschetta (€)**")
+        df_costo = pd.DataFrame({
+            'Sede': ['Montignoso', 'Grosseto'],
+            '€/vaschetta': [costo_medio_mont, costo_medio_gros]
+        })
+        st.bar_chart(df_costo.set_index('Sede'), use_container_width=True)
 
 else:
-    st.info(" Inserisci i costi nella sidebar per visualizzare i grafici analitici.")
+    st.info("💡 Inserisci i costi nella sidebar per visualizzare i grafici analitici.")
 
 # ============================================================
 # 10. TABELLA DETTAGLIATA
