@@ -177,7 +177,7 @@ if "Opzione A" in modalita_inserimento:
         st.markdown(f"**💰 Totale Montignoso: € {totale_montignoso:,.2f}**")
         costi_montignoso = {'totale': totale_montignoso}
 
-    with st.expander(" SEDE GROSSETO", expanded=False):
+    with st.expander("🏭 SEDE GROSSETO", expanded=False):
         st.markdown("_Costi già attribuiti a Grosseto_")
         col1, col2 = st.columns(2)
         with col1:
