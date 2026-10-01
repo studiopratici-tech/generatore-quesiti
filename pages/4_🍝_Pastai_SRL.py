@@ -16,7 +16,7 @@ st.markdown("---")
 # ============================================================
 montignoso_data = {
     'Luogo': ['Montignoso'] * 30,
-    'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708",
+    'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708", 
                  "'9709", "'9710", "'9750", "'9751", "'9752", "'9753", "'9755", "'9756",
                  "'9758", "'9759", "'9760", "'9761", "'9763", "'9764", "'9765", "'9766",
                  "'9767", "'9768", "'9769", "'9770", "'9771", "'9772"],
@@ -37,7 +37,7 @@ montignoso_data = {
         'Torta Bietole SG - 200g', 'Torta Zucchine SG - 200g',
         'Trenette Pesto SG - 180g', 'Ravioli Genovese Ragù SG - 180g'
     ],
-    'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25,
+    'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25, 
              0.2, 0.2, 0.2, 0.2, 0.18, 0.25, 0.2, 0.25, 0.2, 0.18,
              0.18, 0.18, 0.18, 0.18, 0.18, 0.25, 0.2, 0.2, 0.18, 0.25],
     'Produzione_2025': [5678.75, 1263.75, 22.00, 2905.25, 868.75, 2708.00, 6061.00, 3395.00,
@@ -102,7 +102,7 @@ df['Coefficiente'] = 1.00
 st.sidebar.header("💰 INSERIMENTO COSTI")
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("📅 Periodo di riferimento")
+st.sidebar.subheader(" Periodo di riferimento")
 periodo = st.sidebar.selectbox(
     "Il bilancio copre:",
     ["Annuale (x1)", "Semestrale (x2)", "Trimestrale (x4)", "Bimestrale (x6)", "Personalizzato"],
@@ -139,7 +139,7 @@ costo_scontistica = st.sidebar.number_input("Scontistica promozionale", min_valu
 totale_costi_comuni = costo_trasporti_vettore + costo_interessi_passivi + costo_scontistica
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("️ Ripartizione Costi Comuni")
+st.sidebar.subheader("⚖️ Ripartizione Costi Comuni")
 pct_montignoso_comuni = st.sidebar.slider("% Costi Comuni su Montignoso", 0, 100, 15)
 pct_grosseto_comuni = 100 - pct_montignoso_comuni
 st.sidebar.info(f"Montignoso: {pct_montignoso_comuni}% | Grosseto: {pct_grosseto_comuni}%")
@@ -177,7 +177,7 @@ if "Opzione A" in modalita_inserimento:
         st.markdown(f"**💰 Totale Montignoso: € {totale_montignoso:,.2f}**")
         costi_montignoso = {'totale': totale_montignoso}
 
-    with st.expander("🏭 SEDE GROSSETO", expanded=False):
+    with st.expander(" SEDE GROSSETO", expanded=False):
         st.markdown("_Costi già attribuiti a Grosseto_")
         col1, col2 = st.columns(2)
         with col1:
@@ -196,7 +196,7 @@ if "Opzione A" in modalita_inserimento:
             g_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="g_737")
 
         totale_grosseto = g_702 + g_704 + g_709 + g_713 + g_714 + g_715 + g_717 + g_720 + g_725 + g_727 + g_735 + g_737
-        st.markdown(f"**💰 Totale Grosseto: € {totale_grosseto:,.2f}**")
+        st.markdown(f"** Totale Grosseto: € {totale_grosseto:,.2f}**")
         costi_grosseto = {'totale': totale_grosseto}
 
 else:
@@ -339,16 +339,15 @@ col1, col2, col3, col4 = st.columns(4)
 col1.metric("📦 Produzione Totale 2025", f"{df['Produzione_2025'].sum():,.2f} kg")
 col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
 col3.metric("⚖️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,.2f}")
-col4.metric(" Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
+col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 # ============================================================
-# 9. GRAFICI ANALITICI (Nativi Streamlit - NO Plotly)
+# 9. GRAFICI ANALITICI (Nativi Streamlit)
 # ============================================================
 if totale_costi_annuali > 0:
     st.markdown("---")
     st.subheader("📈 Analisi Grafica dei Costi")
 
-    # --- GRAFICO 1: Distribuzione Costi tra Sedi ---
     col_graf1, col_graf2 = st.columns(2)
 
     with col_graf1:
@@ -368,20 +367,15 @@ if totale_costi_annuali > 0:
         |  Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
         """)
 
-  # --- GRAFICO 2: Top 10 Prodotti per Costo/Vaschetta ---
-with col_graf2:
-    st.markdown("##### 📊 Top 10 Prodotti per Costo/Vaschetta")
-    top10 = df.nlargest(10, 'Costo_per_Vaschetta').copy()
-    
-    # Crea DataFrame pulito per il grafico
-    chart_data = pd.DataFrame({
-        'Prodotto': top10['Descrizione'].str[:30],
-        'Costo/Vaschetta (€)': top10['Costo_per_Vaschetta']
-    }).set_index('Prodotto')
-    
-    st.bar_chart(chart_data, use_container_width=True)
+    with col_graf2:
+        st.markdown("##### 📊 Top 10 Prodotti per Costo/Vaschetta")
+        top10 = df.nlargest(10, 'Costo_per_Vaschetta').copy()
+        chart_data = pd.DataFrame({
+            'Prodotto': top10['Descrizione'].str[:30],
+            'Costo/Vaschetta (€)': top10['Costo_per_Vaschetta']
+        }).set_index('Prodotto')
+        st.bar_chart(chart_data, use_container_width=True)
 
-    # --- GRAFICO 3: Confronto Sedi ---
     st.markdown("---")
     st.markdown("##### 🏭 Confronto Produzione e Costi tra Sedi")
 
@@ -429,7 +423,7 @@ col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input("🔍 Cerca prodotto...", "")
+    ricerca = st.text_input(" Cerca prodotto...", "")
 
 df_vis = df.copy()
 if filtro_sede != "Tutte":
