@@ -30,7 +30,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.title(" Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
+st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Strumento di controllo di gestione basato sulla produzione 2025 e costi attuali.")
 st.markdown("---")
 
