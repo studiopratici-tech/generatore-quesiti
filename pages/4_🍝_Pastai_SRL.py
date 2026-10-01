@@ -5,7 +5,7 @@ from datetime import datetime
 # ============================================================
 # 1. CONFIGURAZIONE E CSS PERSONALIZZATO
 # ============================================================
-st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
+st.set_page_config(page_title="🍝 Pastai SRL", page_icon="🍝", layout="wide")
 
 # CSS per colori aziendali
 st.markdown("""
