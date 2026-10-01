@@ -3,11 +3,28 @@ import pandas as pd
 from datetime import datetime
 
 # ============================================================
-# 1. CONFIGURAZIONE PAGINA
+# 1. CONFIGURAZIONE E CSS PERSONALIZZATO
 # ============================================================
 st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
-st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
+# CSS per colori aziendali e stampa PDF pulita
+st.markdown("""
+<style>
+    /* Tema Rosso Pomodoro per i KPI */
+    [data-testid="stMetricValue"] { color: #D32F2F; }
+    
+    /* Nasconde sidebar e filtri durante la stampa/salvataggio PDF */
+    @media print {
+        [data-testid="stSidebar"] { display: none; }
+        [data-testid="stDecoration"] { display: none; }
+        [data-testid="stHeader"] { display: none; }
+        .stButton, .stExpander, .stTextInput, .stSelectbox, .stRadio, .stSlider { display: none !important; }
+        .block-container { padding-top: 1rem; max-width: 100%; }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title(" Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
 st.markdown("Strumento di controllo di gestione basato sulla produzione 2025 e costi attuali.")
 st.markdown("---")
 
@@ -27,15 +44,15 @@ montignoso_data = {
         'Tortello Ricotta Spinaci SG - 250g', 'Pansoti Senza Glutine - 250g',
         'Gnudo SG Lavorato a mano - 200g', 'Tordello Carne SG - 250g',
         'Pansoti Salsa Noci SG - 200g', 'Trenette Pesto SG - 200g',
-        'Tortello RS Ragù SG - 200g', 'Gnudo Burro Salvia SG - 200g',
-        'Picio Ragù SG - 180g', 'Sfoglia Lasagna SG - 250g',
+        'Tortello RS Ragu SG - 200g', 'Gnudo Burro Salvia SG - 200g',
+        'Picio Ragu SG - 180g', 'Sfoglia Lasagna SG - 250g',
         'Lasagne Bolognese SG - 200g', 'Trofie Senza Glutine - 250g',
         'Trofie Pesto - 200g', 'Trofie Pesto SG - 180g',
-        'Taglierini Ragù SG - 180g', 'Tortello RS Ragù SG - 180g',
+        'Taglierini Ragu SG - 180g', 'Tortello RS Ragu SG - 180g',
         'Tortello RS Burro Salvia SG - 180g', 'Pansoti Noci SG - 180g',
-        'Tordello Carne Ragù SG - 180g', 'Lasagne Bolognese SG - 250g',
+        'Tordello Carne Ragu SG - 180g', 'Lasagne Bolognese SG - 250g',
         'Torta Bietole SG - 200g', 'Torta Zucchine SG - 200g',
-        'Trenette Pesto SG - 180g', 'Ravioli Genovese Ragù SG - 180g'
+        'Trenette Pesto SG - 180g', 'Ravioli Genovese Ragu SG - 180g'
     ],
     'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25, 
              0.2, 0.2, 0.2, 0.2, 0.18, 0.25, 0.2, 0.25, 0.2, 0.18,
@@ -59,18 +76,18 @@ grosseto_data = {
         'Sfoglia Lasagne - 250g', 'Picio Maremmano - 250g', 'Tagliatelle - 1kg',
         'Tagliatelle - 250g', 'Pappardelle - 250g', 'Pappardelle - 1kg',
         'Taglierini - 250g', 'Taglierini - 1kg', 'Sfoglia Lasagne - 1kg',
-        'Spaghetti Chitarra - 1kg', 'Spaghetti Chitarra Surg. - 1kg',
+        'Spaghetti Chitarra - 1kg', 'Spaghetti Chitarra Surg - 1kg',
         'Spaghetti Chitarra - 250g', 'Tonnarelli - 250g', 'Picio Nero Seppia - 250g',
-        'Gnocchi Patate - 1kg', 'Gnocchi Patate - 400g', 'Picio Maremmano Surg. - 1kg',
-        'Nero Picio Seppia Surg. - 1kg', 'Taglierino Nero Seppia Surg. - 1kg',
-        'Taglierini Surg. - 1kg', 'Pappardelle Surg. - 1kg', 'Gnocchi Surg. - 1kg',
+        'Gnocchi Patate - 1kg', 'Gnocchi Patate - 400g', 'Picio Maremmano Surg - 1kg',
+        'Nero Picio Seppia Surg - 1kg', 'Taglierino Nero Seppia Surg - 1kg',
+        'Taglierini Surg - 1kg', 'Pappardelle Surg - 1kg', 'Gnocchi Surg - 1kg',
         'Tortello Sorano - 250g', 'Gnudi Sorano - 200g', 'Tortello Maremmano - 1kg',
         'Cannelloni RS - 250g', 'Il Bufalino - 250g', 'Tortello Maremmano - 500g',
         'Tortello Maremmano - 250g', 'Gnudo Maremma - 200g', 'Gnudo Maremmano - 500g',
         'Gnudo Maremmano - 1kg', 'Il Bufalino - 1kg', 'Tortello Funghi Porcini - 1kg',
         'Butterino Tordello Carne - 1kg', 'Butterino Tordello Carne - 250g',
-        'Tortello Funghi Porcini - 250g', 'Tortello Maremmano Surg. - 1kg',
-        'Gnudo Maremmano Surg. - 1kg', 'Taiarin - 1kg', 'Lasagne Stordellate Verdi - 1kg',
+        'Tortello Funghi Porcini - 250g', 'Tortello Maremmano Surg - 1kg',
+        'Gnudo Maremmano Surg - 1kg', 'Taiarin - 1kg', 'Lasagne Stordellate Verdi - 1kg',
         'Lasagne Stordellate - 1kg', 'Topetti Patate - 400g', 'Tagliatelle Verdi - 1kg',
         'Taglierino Nero Seppia - 1kg', 'Taglierini Nero Seppia - 250g',
         'Tordello Apuano - 500g', 'Cappelletto - 250g', 'Tagliatelle Apuane - 250g',
@@ -147,7 +164,7 @@ st.sidebar.info(f"Montignoso: {pct_montignoso_comuni}% | Grosseto: {pct_grosseto
 # ============================================================
 # 4. CORPO PRINCIPALE: INSERIMENTO COSTI PER SEDE
 # ============================================================
-st.subheader("🏭 Inserimento Costi per Sede")
+st.subheader(" Inserimento Costi per Sede")
 st.markdown("Inserisci i valori dal bilancio analitico. Lascia a 0 le voci non interessate.")
 
 costi_montignoso = None
@@ -196,7 +213,7 @@ if "Opzione A" in modalita_inserimento:
             g_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="g_737")
 
         totale_grosseto = g_702 + g_704 + g_709 + g_713 + g_714 + g_715 + g_717 + g_720 + g_725 + g_727 + g_735 + g_737
-        st.markdown(f"** Totale Grosseto: € {totale_grosseto:,.2f}**")
+        st.markdown(f"**💰 Totale Grosseto: € {totale_grosseto:,.2f}**")
         costi_grosseto = {'totale': totale_grosseto}
 
 else:
@@ -333,18 +350,23 @@ costo_medio_vaschetta = totale_costi_annuali / totale_vaschette if totale_vasche
 # 8. DASHBOARD KPI
 # ============================================================
 st.markdown("---")
-st.subheader("📊 Risultati della Ripartizione")
+st.subheader(" Risultati della Ripartizione")
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("📦 Produzione Totale 2025", f"{df['Produzione_2025'].sum():,.2f} kg")
 col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
-col3.metric("⚖️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,.2f}")
+col3.metric("️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,.2f}")
 col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
 # ============================================================
-# 9. GRAFICI ANALITICI (Nativi Streamlit)
+# 9. INSIGHT AUTOMATICO E GRAFICI
 # ============================================================
 if totale_costi_annuali > 0:
+    # Insight automatico
+    max_cost_idx = df['Costo_per_Vaschetta'].idxmax()
+    min_cost_idx = df['Costo_per_Vaschetta'].idxmin()
+    st.info(f"💡 **Insight Automatico:** Il prodotto con il costo di struttura più alto è **{df.loc[max_cost_idx, 'Descrizione']}** (€ {df.loc[max_cost_idx, 'Costo_per_Vaschetta']:.4f}/vaschetta). Il più efficiente è **{df.loc[min_cost_idx, 'Descrizione']}** (€ {df.loc[min_cost_idx, 'Costo_per_Vaschetta']:.4f}/vaschetta).")
+
     st.markdown("---")
     st.subheader("📈 Analisi Grafica dei Costi")
 
@@ -364,7 +386,7 @@ if totale_costi_annuali > 0:
         | Sede | Costi | % sul Totale |
         |------|-------|--------------|
         | 🏭 Montignoso | € {budget_montignoso:,.2f} | {pct_mont:.1f}% |
-        |  Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
+        | 🏭 Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
         """)
 
     with col_graf2:
@@ -390,26 +412,17 @@ if totale_costi_annuali > 0:
 
     with col_c1:
         st.markdown("**Produzione (kg)**")
-        df_kg = pd.DataFrame({
-            'Sede': ['Montignoso', 'Grosseto'],
-            'Kg': [kg_mont, kg_gros]
-        })
+        df_kg = pd.DataFrame({'Sede': ['Montignoso', 'Grosseto'], 'Kg': [kg_mont, kg_gros]})
         st.bar_chart(df_kg.set_index('Sede'), use_container_width=True)
 
     with col_c2:
         st.markdown("**N. Vaschette**")
-        df_vasch = pd.DataFrame({
-            'Sede': ['Montignoso', 'Grosseto'],
-            'Vaschette': [vasch_mont, vasch_gros]
-        })
+        df_vasch = pd.DataFrame({'Sede': ['Montignoso', 'Grosseto'], 'Vaschette': [vasch_mont, vasch_gros]})
         st.bar_chart(df_vasch.set_index('Sede'), use_container_width=True)
 
     with col_c3:
         st.markdown("**Costo medio/vaschetta (€)**")
-        df_costo = pd.DataFrame({
-            'Sede': ['Montignoso', 'Grosseto'],
-            '€/vaschetta': [costo_medio_mont, costo_medio_gros]
-        })
+        df_costo = pd.DataFrame({'Sede': ['Montignoso', 'Grosseto'], '€/vaschetta': [costo_medio_mont, costo_medio_gros]})
         st.bar_chart(df_costo.set_index('Sede'), use_container_width=True)
 
 else:
@@ -423,7 +436,7 @@ col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input(" Cerca prodotto...", "")
+    ricerca = st.text_input("🔍 Cerca prodotto...", "")
 
 df_vis = df.copy()
 if filtro_sede != "Tutte":
@@ -468,7 +481,7 @@ st.dataframe(
 # 11. TOP 20 PRODOTTI
 # ============================================================
 st.markdown("---")
-st.subheader("🏆 Top 20 Prodotti per Volume di Produzione")
+st.subheader(" Top 20 Prodotti per Volume di Produzione")
 
 top20 = df.nlargest(20, 'Produzione_2025')[['Luogo', 'Articolo', 'Descrizione', 'Produzione_2025']].copy()
 top20['Produzione_2025'] = top20['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
@@ -481,34 +494,23 @@ st.dataframe(
 )
 
 # ============================================================
-# 12. FORMULA DI CALCOLO
-# ============================================================
-with st.expander("📐 Vedi formula di calcolo e logica applicata"):
-    st.markdown("""
-    **Logica di Ripartizione:**
-
-    1. **Separazione Costi:** I costi di Produzione/Confezionamento vengono attribuiti direttamente alla sede di competenza (Opzione A) o ripartiti per kg (Opzione B). I costi Comuni (Trasporti vettore, Interessi passivi, Scontistica promozionale) vengono ripartiti tra le sedi in base alla percentuale definita dallo slider.
-
-    2. **Produzione Ponderata:** Per ogni prodotto: `Produzione (kg) × Coefficiente di Complessità`.
-
-    3. **Ripartizione per Sede:** I costi totali di ogni sede (Diretti + Quota Comuni) vengono ripartiti sui prodotti di *quella specifica sede* in base alla loro % di Produzione Ponderata.
-
-    4. **Costo per Vaschetta:** `Quota Costi Assegnata al Prodotto ÷ Numero Vaschette Prodotte`.
-    """)
-
-# ============================================================
-# 13. EXPORT
+# 12. EXPORT E STAMPA PDF
 # ============================================================
 st.markdown("---")
-st.subheader("💾 Esporta Dati")
+st.subheader("💾 Esporta Dati e Report")
 
-csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
-st.download_button(
-    label="📥 Scarica analisi completa in CSV",
-    data=csv,
-    file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
-    mime='text/csv'
-)
+col_p1, col_p2 = st.columns(2)
+with col_p1:
+    csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
+    st.download_button(
+        label="📥 Scarica analisi completa in CSV",
+        data=csv,
+        file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
+        mime='text/csv'
+    )
+
+with col_p2:
+    st.success("🖨️ **Come salvare il PDF:** Premi `CTRL + P` (o `CMD + P` su Mac) sul tuo browser. Grazie al nostro foglio di stile, la sidebar e i filtri spariranno automaticamente, lasciando solo il report perfetto da salvare come PDF!")
 
 st.markdown("---")
 st.caption("Dati produzione 2025 | Inserimento costi manuale | Ripartizione ponderata per sede e complessità")
