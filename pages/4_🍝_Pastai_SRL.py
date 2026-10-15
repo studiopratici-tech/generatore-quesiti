@@ -3,127 +3,161 @@ import pandas as pd
 from datetime import datetime
 
 # ============================================================
-# 1. CONFIGURAZIONE E CSS PERSONALIZZATO
+# 1. CONFIGURAZIONE E CSS
 # ============================================================
 st.set_page_config(page_title="Pastai SRL", page_icon="🍝", layout="wide")
 
-# CSS per colori aziendali
 st.markdown("""
 <style>
-    /* Tema Rosso Pomodoro per i KPI */
     [data-testid="stMetricValue"] { color: #D32F2F; font-size: 1.8rem; }
-    [data-testid="stMetricLabel"] { font-size: 0.9rem; }
-    
-    /* Stile per i titoli di sezione */
     h1 { color: #D32F2F; }
     h2 { color: #B71C1C; }
-    
-    /* Bottoni rossi */
-    .stButton > button { 
-        background-color: #D32F2F; 
-        color: white;
-        border-radius: 8px;
-    }
-    .stButton > button:hover { 
-        background-color: #B71C1C; 
-    }
+    .stButton > button { background-color: #D32F2F; color: white; border-radius: 8px; }
+    .stButton > button:hover { background-color: #B71C1C; }
 </style>
 """, unsafe_allow_html=True)
 
 st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
-st.markdown("Strumento di controllo di gestione basato sulla produzione 2025 e costi attuali.")
+st.markdown("Strumento di controllo di gestione con doppia base di ripartizione (2025 e 2026).")
 st.markdown("---")
 
 # ============================================================
-# 2. DATI DI PRODUZIONE 2025 (Fissi)
+# 2. DATI PRODUZIONE 2025
 # ============================================================
-montignoso_data = {
+montignoso_2025 = {
     'Luogo': ['Montignoso'] * 30,
-    'Articolo': ["'9700", "'9701", "'9703", "'9704", "'9705", "'9706", "'9707", "'9708", 
-                 "'9709", "'9710", "'9750", "'9751", "'9752", "'9753", "'9755", "'9756",
-                 "'9758", "'9759", "'9760", "'9761", "'9763", "'9764", "'9765", "'9766",
-                 "'9767", "'9768", "'9769", "'9770", "'9771", "'9772"],
-    'Descrizione': [
-        'Picio Senza Glutine - 250g', 'Tagliatelle Senza Glutine - 250g',
-        'Spaghetti Chitarra SG - 250g', 'Trenette Senza Glutine - 250g',
-        'Taiarin Senza Glutine - 250g', 'Raviolo Genovese SG - 250g',
-        'Tortello Ricotta Spinaci SG - 250g', 'Pansoti Senza Glutine - 250g',
-        'Gnudo SG Lavorato a mano - 200g', 'Tordello Carne SG - 250g',
-        'Pansoti Salsa Noci SG - 200g', 'Trenette Pesto SG - 200g',
-        'Tortello RS Ragu SG - 200g', 'Gnudo Burro Salvia SG - 200g',
-        'Picio Ragu SG - 180g', 'Sfoglia Lasagna SG - 250g',
-        'Lasagne Bolognese SG - 200g', 'Trofie Senza Glutine - 250g',
-        'Trofie Pesto - 200g', 'Trofie Pesto SG - 180g',
-        'Taglierini Ragu SG - 180g', 'Tortello RS Ragu SG - 180g',
-        'Tortello RS Burro Salvia SG - 180g', 'Pansoti Noci SG - 180g',
-        'Tordello Carne Ragu SG - 180g', 'Lasagne Bolognese SG - 250g',
-        'Torta Bietole SG - 200g', 'Torta Zucchine SG - 200g',
-        'Trenette Pesto SG - 180g', 'Ravioli Genovese Ragu SG - 180g'
-    ],
-    'Peso': [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.2, 0.25, 
-             0.2, 0.2, 0.2, 0.2, 0.18, 0.25, 0.2, 0.25, 0.2, 0.18,
-             0.18, 0.18, 0.18, 0.18, 0.18, 0.25, 0.2, 0.2, 0.18, 0.25],
-    'Produzione_2025': [5678.75, 1263.75, 22.00, 2905.25, 868.75, 2708.00, 6061.00, 3395.00,
-                        3064.80, 2732.25, 62.00, 40.00, 178.20, 138.20, 48.96, 713.50,
-                        115.40, 3263.00, 70.00, 9.00, 8.10, 10.80, 4.50, 1.98,
-                        4.68, 8.50, 193.20, 204.80, 1.98, 1.50]
+    'Articolo': ["'9700","'9701","'9703","'9704","'9705","'9706","'9707","'9708","'9709","'9710",
+                 "'9750","'9751","'9752","'9753","'9755","'9756","'9758","'9759","'9760","'9761",
+                 "'9763","'9764","'9765","'9766","'9767","'9768","'9769","'9770","'9771","'9772"],
+    'Descrizione': ['Picio Senza Glutine - 250g','Tagliatelle Senza Glutine - 250g','Spaghetti Chitarra SG - 250g',
+        'Trenette Senza Glutine - 250g','Taiarin Senza Glutine - 250g','Raviolo Genovese SG - 250g',
+        'Tortello Ricotta Spinaci SG - 250g','Pansoti Senza Glutine - 250g','Gnudo SG Lavorato a mano - 200g',
+        'Tordello Carne SG - 250g','Pansoti Salsa Noci SG - 200g','Trenette Pesto SG - 200g',
+        'Tortello RS Ragu SG - 200g','Gnudo Burro Salvia SG - 200g','Picio Ragu SG - 180g',
+        'Sfoglia Lasagna SG - 250g','Lasagne Bolognese SG - 200g','Trofie Senza Glutine - 250g',
+        'Trofie Pesto - 200g','Trofie Pesto SG - 180g','Taglierini Ragu SG - 180g','Tortello RS Ragu SG - 180g',
+        'Tortello RS Burro Salvia SG - 180g','Pansoti Noci SG - 180g','Tordello Carne Ragu SG - 180g',
+        'Lasagne Bolognese SG - 250g','Torta Bietole SG - 200g','Torta Zucchine SG - 200g',
+        'Trenette Pesto SG - 180g','Ravioli Genovese Ragu SG - 180g'],
+    'Peso': [0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.2,0.25,0.2,0.2,0.2,0.2,0.18,0.25,0.2,0.25,0.2,0.18,
+             0.18,0.18,0.18,0.18,0.18,0.25,0.2,0.2,0.18,0.25],
+    'Kg': [5678.75,1263.75,22.00,2905.25,868.75,2708.00,6061.00,3395.00,3064.80,2732.25,62.00,40.00,178.20,
+           138.20,48.96,713.50,115.40,3263.00,70.00,9.00,8.10,10.80,4.50,1.98,4.68,8.50,193.20,204.80,1.98,1.50]
 }
 
-grosseto_data = {
+grosseto_2025 = {
     'Luogo': ['Grosseto'] * 61,
-    'Articolo': ["'1001", "'1003", "'1005", "'1007", "'1009", "'1101", "'1109", "'1110", "'1111", "'1113",
-                 "'1121", "'1141", "'1151", "'1153", "'1154", "'1183", "'1184", "'1201", "'1202", "'1501",
-                 "'1505", "'1507", "'1602", "'1611", "'1701", "'1803", "'1804", "'2001", "'2003", "'2004",
-                 "'2005", "'2010", "'2012", "'2013", "'2014", "'2016", "'2071", "'2082", "'2086", "'2087",
-                 "'2501", "'2511", "'4005", "'4009", "'4011", "'4016", "'4018", "'4021", "'4022", "'4035",
-                 "'4050", "'4053", "'4055", "'4056", "'4057", "'4058", "'5001", "'5004", "'5005", "'5007", "'5008"],
-    'Descrizione': [
-        'Picio Maremmano - 1000g', 'Picio Maremmano - 500g', 'Nero Picio Seppia - 1kg',
-        'Sfoglia Lasagne - 250g', 'Picio Maremmano - 250g', 'Tagliatelle - 1kg',
-        'Tagliatelle - 250g', 'Pappardelle - 250g', 'Pappardelle - 1kg',
-        'Taglierini - 250g', 'Taglierini - 1kg', 'Sfoglia Lasagne - 1kg',
-        'Spaghetti Chitarra - 1kg', 'Spaghetti Chitarra Surg - 1kg',
-        'Spaghetti Chitarra - 250g', 'Tonnarelli - 250g', 'Picio Nero Seppia - 250g',
-        'Gnocchi Patate - 1kg', 'Gnocchi Patate - 400g', 'Picio Maremmano Surg - 1kg',
-        'Nero Picio Seppia Surg - 1kg', 'Taglierino Nero Seppia Surg - 1kg',
-        'Taglierini Surg - 1kg', 'Pappardelle Surg - 1kg', 'Gnocchi Surg - 1kg',
-        'Tortello Sorano - 250g', 'Gnudi Sorano - 200g', 'Tortello Maremmano - 1kg',
-        'Cannelloni RS - 250g', 'Il Bufalino - 250g', 'Tortello Maremmano - 500g',
-        'Tortello Maremmano - 250g', 'Gnudo Maremma - 200g', 'Gnudo Maremmano - 500g',
-        'Gnudo Maremmano - 1kg', 'Il Bufalino - 1kg', 'Tortello Funghi Porcini - 1kg',
-        'Butterino Tordello Carne - 1kg', 'Butterino Tordello Carne - 250g',
-        'Tortello Funghi Porcini - 250g', 'Tortello Maremmano Surg - 1kg',
-        'Gnudo Maremmano Surg - 1kg', 'Taiarin - 1kg', 'Lasagne Stordellate Verdi - 1kg',
-        'Lasagne Stordellate - 1kg', 'Topetti Patate - 400g', 'Tagliatelle Verdi - 1kg',
-        'Taglierino Nero Seppia - 1kg', 'Taglierini Nero Seppia - 250g',
-        'Tordello Apuano - 500g', 'Cappelletto - 250g', 'Tagliatelle Apuane - 250g',
-        'Taiarin - 250g', 'Tagliatelle Verdi - 250g', 'Lasagne Stordellate Verdi - 250g',
-        'Lasagne Stordellate - 250g', 'Tordello Apuano - 1kg', 'Raviolo Ravan - 200g',
-        'Tortello RS - 1kg', 'Tortello RS - 250g', 'Tordello Apuano Lavorato - 250g'
-    ],
-    'Peso': [1, 0.5, 1, 0.25, 0.25, 1, 0.25, 0.25, 1, 0.25, 1, 1, 1, 1, 0.25, 0.25, 0.25, 1, 0.4, 1,
-             1, 1, 1, 1, 1, 0.25, 0.2, 1, 0.25, 0.25, 0.5, 0.25, 0.2, 0.5, 1, 1, 1, 1, 0.25, 0.25,
-             1, 1, 1, 1, 1, 0.4, 1, 1, 0.25, 0.5, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 1, 0.2, 1, 0.25, 0.25],
-    'Produzione_2025': [14400.00, 3844.00, 92.25, 101.75, 34814.00, 2196.00, 4403.50, 3992.25, 1463.00, 264.25,
-                        796.00, 18.00, 1059.00, 690.00, 916.50, 1392.50, 938.25, 3287.00, 12271.20, 5435.00,
-                        60.00, 122.00, 3.00, 145.00, 130.00, 1089.00, 387.60, 17409.00, 2388.00, 50.25,
-                        3353.50, 28389.00, 11410.00, 248.50, 1444.00, 239.00, 73.00, 468.00, 1944.00, 44.50,
-                        2025.00, 120.00, 2.00, 79.00, 3.00, 1093.60, 80.00, 254.00, 2124.25, 471.50,
-                        1381.75, 147.50, 3018.50, 793.75, 4634.25, 1265.00, 1168.00, 136.20, 329.00, 8814.50, 10607.75]
+    'Articolo': ["'1001","'1003","'1005","'1007","'1009","'1101","'1109","'1110","'1111","'1113","'1121","'1141",
+        "'1151","'1153","'1154","'1183","'1184","'1201","'1202","'1501","'1505","'1507","'1602","'1611","'1701",
+        "'1803","'1804","'2001","'2003","'2004","'2005","'2010","'2012","'2013","'2014","'2016","'2071","'2082",
+        "'2086","'2087","'2501","'2511","'4005","'4009","'4011","'4016","'4018","'4021","'4022","'4035","'4050",
+        "'4053","'4055","'4056","'4057","'4058","'5001","'5004","'5005","'5007","'5008"],
+    'Descrizione': ['Picio Maremmano - 1000g','Picio Maremmano - 500g','Nero Picio Seppia - 1kg','Sfoglia Lasagne - 250g',
+        'Picio Maremmano - 250g','Tagliatelle - 1kg','Tagliatelle - 250g','Pappardelle - 250g','Pappardelle - 1kg',
+        'Taglierini - 250g','Taglierini - 1kg','Sfoglia Lasagne - 1kg','Spaghetti Chitarra - 1kg',
+        'Spaghetti Chitarra Surg - 1kg','Spaghetti Chitarra - 250g','Tonnarelli - 250g','Picio Nero Seppia - 250g',
+        'Gnocchi Patate - 1kg','Gnocchi Patate - 400g','Picio Maremmano Surg - 1kg','Nero Picio Seppia Surg - 1kg',
+        'Taglierino Nero Seppia Surg - 1kg','Taglierini Surg - 1kg','Pappardelle Surg - 1kg','Gnocchi Surg - 1kg',
+        'Tortello Sorano - 250g','Gnudi Sorano - 200g','Tortello Maremmano - 1kg','Cannelloni RS - 250g',
+        'Il Bufalino - 250g','Tortello Maremmano - 500g','Tortello Maremmano - 250g','Gnudo Maremma - 200g',
+        'Gnudo Maremmano - 500g','Gnudo Maremmano - 1kg','Il Bufalino - 1kg','Tortello Funghi Porcini - 1kg',
+        'Butterino Tordello Carne - 1kg','Butterino Tordello Carne - 250g','Tortello Funghi Porcini - 250g',
+        'Tortello Maremmano Surg - 1kg','Gnudo Maremmano Surg - 1kg','Taiarin - 1kg','Lasagne Stordellate Verdi - 1kg',
+        'Lasagne Stordellate - 1kg','Topetti Patate - 400g','Tagliatelle Verdi - 1kg','Taglierino Nero Seppia - 1kg',
+        'Taglierini Nero Seppia - 250g','Tordello Apuano - 500g','Cappelletto - 250g','Tagliatelle Apuane - 250g',
+        'Taiarin - 250g','Tagliatelle Verdi - 250g','Lasagne Stordellate Verdi - 250g','Lasagne Stordellate - 250g',
+        'Tordello Apuano - 1kg','Raviolo Ravan - 200g','Tortello RS - 1kg','Tortello RS - 250g','Tordello Apuano Lavorato - 250g'],
+    'Peso': [1,0.5,1,0.25,0.25,1,0.25,0.25,1,0.25,1,1,1,1,0.25,0.25,0.25,1,0.4,1,1,1,1,1,1,0.25,0.2,1,0.25,0.25,
+             0.5,0.25,0.2,0.5,1,1,1,1,0.25,0.25,1,1,1,1,1,0.4,1,1,0.25,0.5,0.25,0.25,0.25,0.25,0.25,0.25,1,0.2,1,0.25,0.25],
+    'Kg': [14400.00,3844.00,92.25,101.75,34814.00,2196.00,4403.50,3992.25,1463.00,264.25,796.00,18.00,1059.00,
+           690.00,916.50,1392.50,938.25,3287.00,12271.20,5435.00,60.00,122.00,3.00,145.00,130.00,1089.00,387.60,
+           17409.00,2388.00,50.25,3353.50,28389.00,11410.00,248.50,1444.00,239.00,73.00,468.00,1944.00,44.50,
+           2025.00,120.00,2.00,79.00,3.00,1093.60,80.00,254.00,2124.25,471.50,1381.75,147.50,3018.50,793.75,
+           4634.25,1265.00,1168.00,136.20,329.00,8814.50,10607.75]
 }
-
-df_mont = pd.DataFrame(montignoso_data)
-df_gros = pd.DataFrame(grosseto_data)
-df = pd.concat([df_mont, df_gros], ignore_index=True)
-
-df['N_Vaschette'] = df['Produzione_2025'] / df['Peso']
-df['Coefficiente'] = 1.00
 
 # ============================================================
-# 3. SIDEBAR: CONTROLLI ESSENZIALI
+# 3. DATI PRODUZIONE 2026 (gen-lug, reali)
+# ============================================================
+montignoso_2026 = {
+    'Luogo': ['Montignoso'] * 39,
+    'Articolo': ["'9700","'9701","'9703","'9704","'9705","'9706","'9707","'9708","'9709","'9710",
+                 "'9750","'9751","'9752","'9753","'9755","'9756","'9758","'9759","'9760","'9761",
+                 "'9762","'9763","'9764","'9765","'9766","'9767","'9768","'9769","'9770","'9771",
+                 "'9772","'9800","'9801","'9802","'9803","'9804","'9806","'9807","'9813"],
+    'Descrizione': ['Picio Senza Glutine - 250g','Tagliatelle Senza Glutine - 250g','Spaghetti Chitarra SG - 250g',
+        'Trenette Senza Glutine - 250g','Taiarin Senza Glutine - 250g','Raviolo Genovese SG - 250g',
+        'Tortello Ricotta Spinaci SG - 250g','Pansoti Senza Glutine - 250g','Gnudo SG Lavorato a mano - 200g',
+        'Tordello Carne SG - 250g','Pansoti Salsa Noci SG - 200g','Trenette Pesto SG - 200g',
+        'Tortello RS Ragu SG - 200g','Gnudo Burro Salvia SG - 200g','Picio Ragu SG - 180g',
+        'Sfoglia Lasagna SG - 250g','Lasagne Bolognese SG - 200g','Trofie Senza Glutine - 250g',
+        'Trofie Pesto - 200g','Trofie Pesto SG - 180g','Pici Ragu SG Surg - 180g','Taglierini Ragu SG - 180g',
+        'Tortello RS Ragu SG - 180g','Tortello RS Burro Salvia SG - 180g','Pansoti Noci SG - 180g',
+        'Tordello Carne Ragu SG - 180g','Lasagne Bolognese SG - 250g','Torta Bietole SG - 200g',
+        'Torta Zucchine SG - 200g','Trenette Pesto SG - 180g','Ravioli Genovese Ragu SG - 180g',
+        'Lasagne Bolognese Surg SG - 250g','Trofie Pesto Surg SG - 180g','Tortello RS Burro Surg SG - 180g',
+        'Pansoti Noci Surg SG - 180g','Tordello Ragu Surg SG - 180g','Gnudo Burro Salvia Surg SG - 180g',
+        'Taglierini Ragu Surg SG - 180g','Lasagne Pesto SG - 250g'],
+    'Peso': [0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.25,0.2,0.25,0.2,0.2,0.2,0.2,0.18,0.25,0.2,0.25,0.2,0.18,
+             0.18,0.18,0.18,0.18,0.18,0.18,0.25,0.2,0.2,0.18,0.25,0.25,0.18,0.18,0.18,0.18,0.2,0.25,0.25],
+    'Kg': [2987.25,899,10.25,1002.25,777,2451,3335.75,2827,1590.20,1202.25,1.2,0.4,15,77.8,1.98,555.25,9.4,
+           3879.50,12.6,78.84,18,28.26,103.5,29.16,11.7,18.72,247.25,966.6,900.6,19.44,7,40,14.4,7.2,14.4,
+           7.2,11.2,14,0.25]
+}
+
+grosseto_2026 = {
+    'Luogo': ['Grosseto'] * 63,
+    'Articolo': ["'1001","'1003","'1005","'1007","'1009","'1101","'1109","'1110","'1111","'1113","'1121","'1141",
+        "'1151","'1153","'1154","'1183","'1184","'1201","'1202","'1501","'1505","'1507","'1602","'1611","'1701",
+        "'1803","'1804","'2001","'2003","'2004","'2005","'2010","'2012","'2013","'2014","'2016","'2071","'2082",
+        "'2086","'2087","'2501","'2511","'4005","'4009","'4011","'4016","'4018","'4021","'4022","'4030","'4035",
+        "'4036","'4050","'4053","'4055","'4056","'4057","'4058","'5001","'5004","'5005","'5007","'5008"],
+    'Descrizione': ['Picio Maremmano - 1000g','Picio Maremmano - 500g','Nero Picio Seppia - 1kg','Sfoglia Lasagne - 250g',
+        'Picio Maremmano - 250g','Tagliatelle - 1kg','Tagliatelle - 250g','Pappardelle - 250g','Pappardelle - 1kg',
+        'Taglierini - 250g','Taglierini - 1kg','Sfoglia Lasagne - 1kg','Spaghetti Chitarra - 1kg',
+        'Spaghetti Chitarra Surg - 1kg','Spaghetti Chitarra - 250g','Tonnarelli - 250g','Picio Nero Seppia - 250g',
+        'Gnocchi Patate - 1kg','Gnocchi Patate - 400g','Picio Maremmano Surg - 1kg','Nero Picio Seppia Surg - 1kg',
+        'Taglierino Nero Seppia Surg - 1kg','Taglierini Surg - 1kg','Pappardelle Surg - 1kg','Gnocchi Surg - 1kg',
+        'Tortello Sorano - 250g','Gnudi Sorano - 200g','Tortello Maremmano - 1kg','Cannelloni RS - 250g',
+        'Il Bufalino - 250g','Tortello Maremmano - 500g','Tortello Maremmano - 250g','Gnudo Maremma - 200g',
+        'Gnudo Maremmano - 500g','Gnudo Maremmano - 1kg','Il Bufalino - 1kg','Tortello Funghi Porcini - 1kg',
+        'Butterino Tordello Carne - 1kg','Butterino Tordello Carne - 250g','Tortello Funghi Porcini - 250g',
+        'Tortello Maremmano Surg - 1kg','Gnudo Maremmano Surg - 1kg','Taiarin - 1kg','Lasagne Stordellate Verdi - 1kg',
+        'Lasagne Stordellate - 1kg','Topetti Patate - 400g','Tagliatelle Verdi - 1kg','Taglierino Nero Seppia - 1kg',
+        'Taglierini Nero Seppia - 250g','Tagliatelle - 500g','Tordello Apuano - 500g','Tortello RS - 500g',
+        'Cappelletto - 250g','Tagliatelle Apuane - 250g','Taiarin - 250g','Tagliatelle Verdi - 250g',
+        'Lasagne Stordellate Verdi - 250g','Lasagne Stordellate - 250g','Tordello Apuano - 1kg','Raviolo Ravan - 200g',
+        'Tortello RS - 1kg','Tortello RS - 250g','Tordello Apuano Lavorato - 250g'],
+    'Peso': [1,0.5,1,0.25,0.25,1,0.25,0.25,1,0.25,1,1,1,1,0.25,0.25,0.25,1,0.4,1,1,1,1,1,1,0.25,0.2,1,0.25,0.25,
+             0.5,0.25,0.2,0.5,1,1,1,1,0.25,0.25,1,1,1,1,1,0.4,1,1,0.25,0.5,0.5,0.5,0.25,0.25,0.25,0.25,0.25,0.25,
+             1,0.2,1,0.25,0.25],
+    'Kg': [8872,2651,64.5,30.75,19906.25,1706,2553.50,1912.25,956,125.5,735,34,1214,185,575.5,653,406,2582,7176,
+           2599,60,36,39,20,129,595,168,9547,1381.50,0.25,225.5,17901,7050.20,233.5,870,60,29,273,1022,16.75,
+           1215,160,56,42,4,280.8,3,149,1065.75,6,353,54,566,112.25,1676.50,541.25,2966.25,733,872,95,730,
+           4528.25,6208.25]
+}
+
+# Costruzione dataframe
+df25 = pd.concat([pd.DataFrame(montignoso_2025), pd.DataFrame(grosseto_2025)], ignore_index=True)
+df26 = pd.concat([pd.DataFrame(montignoso_2026), pd.DataFrame(grosseto_2026)], ignore_index=True)
+
+df25['N_Vaschette'] = df25['Kg'] / df25['Peso']
+df26['N_Vaschette'] = df26['Kg'] / df26['Peso']
+df25['Coefficiente'] = 1.00
+df26['Coefficiente'] = 1.00
+
+# ============================================================
+# 4. SIDEBAR
 # ============================================================
 st.sidebar.header("💰 INSERIMENTO COSTI")
 st.sidebar.markdown("---")
+
+st.sidebar.subheader("🗓️ Base di Ripartizione")
+base_scelta = st.sidebar.radio(
+    "Seleziona la base di calcolo:",
+    ["Base 2025 (storica)", "Base 2026 (reale gen-lug)", "Confronto 2025 vs 2026"],
+    index=0
+)
 
 st.sidebar.subheader("📅 Periodo di riferimento")
 periodo = st.sidebar.selectbox(
@@ -131,424 +165,286 @@ periodo = st.sidebar.selectbox(
     ["Annuale (x1)", "Semestrale (x2)", "Trimestrale (x4)", "Bimestrale (x6)", "Personalizzato"],
     index=1
 )
-
 if periodo == "Personalizzato":
     moltiplicatore = st.sidebar.number_input("Moltiplicatore personalizzato", min_value=0.1, max_value=12.0, value=2.0, step=0.5)
 else:
     moltiplicatore_map = {"Annuale (x1)": 1, "Semestrale (x2)": 2, "Trimestrale (x4)": 4, "Bimestrale (x6)": 6}
     moltiplicatore = moltiplicatore_map[periodo]
-
 st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicatore}**.")
+
+if "2026" in base_scelta:
+    mesi_2026 = st.sidebar.slider("Mesi di riferimento 2026", 1, 12, 7, help="I dati 2026 coprono gen-lug (7 mesi). L'app proietta le vaschette su base annua.")
+    fattore_proiezione = 12 / mesi_2026
+else:
+    fattore_proiezione = 1
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("⚙️ Modalità di inserimento")
 modalita_inserimento = st.sidebar.radio(
     "Come vuoi inserire i costi?",
-    [
-        "Opzione A: Inserimento diretto per sede",
-        "Opzione B: Totale aziendale (ripartizione per kg)"
-    ],
+    ["Opzione A: Inserimento diretto per sede", "Opzione B: Totale aziendale (ripartizione per kg)"],
     index=0
 )
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("🏢 Costi Comuni da Ripartire")
-st.sidebar.markdown("_Trasporti vettore, Interessi passivi, Scontistica_")
-
 costo_trasporti_vettore = st.sidebar.number_input("Trasporti a mezzo vettore", min_value=0.0, value=0.0, step=100.0)
 costo_interessi_passivi = st.sidebar.number_input("Interessi passivi da finanziarie", min_value=0.0, value=0.0, step=100.0)
 costo_scontistica = st.sidebar.number_input("Scontistica promozionale", min_value=0.0, value=0.0, step=100.0)
-
 totale_costi_comuni = costo_trasporti_vettore + costo_interessi_passivi + costo_scontistica
 
-st.sidebar.markdown("---")
 st.sidebar.subheader("⚖️ Ripartizione Costi Comuni")
 pct_montignoso_comuni = st.sidebar.slider("% Costi Comuni su Montignoso", 0, 100, 15)
 pct_grosseto_comuni = 100 - pct_montignoso_comuni
-st.sidebar.info(f"Montignoso: {pct_montignoso_comuni}% | Grosseto: {pct_grosseto_comuni}%")
 
 # ============================================================
-# 4. CORPO PRINCIPALE: INSERIMENTO COSTI PER SEDE
+# 5. INSERIMENTO COSTI PER SEDE
 # ============================================================
 st.subheader("🏭 Inserimento Costi per Sede")
-st.markdown("Inserisci i valori dal bilancio analitico. Lascia a 0 le voci non interessate.")
 
-costi_montignoso = None
-costi_grosseto = None
-costi_aziendali = None
-
-if "Opzione A" in modalita_inserimento:
-    with st.expander("🏭 SEDE MONTIGNOSO", expanded=False):
-        st.markdown("_Costi già attribuiti a Montignoso_")
+def crea_campi_sede(prefisso, nome):
+    with st.expander(f"🏭 SEDE {nome}", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            m_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="m_702")
-            m_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="m_704")
-            m_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="m_709")
-            m_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="m_713")
-            m_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="m_714")
-            m_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="m_715")
+            c702 = st.number_input(f"702 - Materie prime ({nome})", min_value=0.0, value=0.0, step=1000.0, key=f"{prefisso}_702")
+            c704 = st.number_input(f"704 - Materiali vari ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_704")
+            c709 = st.number_input(f"709 - Servizi generali ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_709")
+            c713 = st.number_input(f"713 - Autoveicoli ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_713")
+            c714 = st.number_input(f"714 - Manutenzioni ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_714")
+            c715 = st.number_input(f"715 - Altri servizi ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_715")
         with col2:
-            m_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="m_717")
-            m_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="m_720")
-            m_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="m_725")
-            m_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="m_727")
-            m_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="m_735")
-            m_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="m_737")
+            c717 = st.number_input(f"717 - Godimento beni ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_717")
+            c720 = st.number_input(f"720 - Lavoro dipendente ({nome})", min_value=0.0, value=0.0, step=1000.0, key=f"{prefisso}_720")
+            c725 = st.number_input(f"725 - Ammort. immat. ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_725")
+            c727 = st.number_input(f"727 - Ammort. mat. ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_727")
+            c735 = st.number_input(f"735 - Imposte e tasse ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_735")
+            c737 = st.number_input(f"737/748 - Altri oneri ({nome})", min_value=0.0, value=0.0, step=100.0, key=f"{prefisso}_737")
+        totale = c702+c704+c709+c713+c714+c715+c717+c720+c725+c727+c735+c737
+        st.markdown(f"**💰 Totale {nome}: € {totale:,.2f}**")
+        return totale
 
-        totale_montignoso = m_702 + m_704 + m_709 + m_713 + m_714 + m_715 + m_717 + m_720 + m_725 + m_727 + m_735 + m_737
-        st.markdown(f"**💰 Totale Montignoso: € {totale_montignoso:,.2f}**")
-        costi_montignoso = {'totale': totale_montignoso}
-
-    with st.expander("🏭 SEDE GROSSETO", expanded=False):
-        st.markdown("_Costi già attribuiti a Grosseto_")
-        col1, col2 = st.columns(2)
-        with col1:
-            g_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="g_702")
-            g_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="g_704")
-            g_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="g_709")
-            g_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="g_713")
-            g_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="g_714")
-            g_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="g_715")
-        with col2:
-            g_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="g_717")
-            g_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="g_720")
-            g_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="g_725")
-            g_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="g_727")
-            g_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="g_735")
-            g_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="g_737")
-
-        totale_grosseto = g_702 + g_704 + g_709 + g_713 + g_714 + g_715 + g_717 + g_720 + g_725 + g_727 + g_735 + g_737
-        st.markdown(f"** Totale Grosseto: € {totale_grosseto:,.2f}**")
-        costi_grosseto = {'totale': totale_grosseto}
-
-else:
+def crea_campi_aziendali():
     with st.expander("🏢 COSTI TOTALI AZIENDALI", expanded=False):
-        st.markdown("_Verranno ripartiti tra le sedi in base ai kg prodotti_")
         col1, col2 = st.columns(2)
         with col1:
-            a_702 = st.number_input("702 - Materie prime e imballaggi", min_value=0.0, value=0.0, step=1000.0, key="a_702")
-            a_704 = st.number_input("704 - Acquisto materiali vari", min_value=0.0, value=0.0, step=100.0, key="a_704")
-            a_709 = st.number_input("709 - Servizi generali-amministrativi", min_value=0.0, value=0.0, step=100.0, key="a_709")
-            a_713 = st.number_input("713 - Costi gestione autoveicoli", min_value=0.0, value=0.0, step=100.0, key="a_713")
-            a_714 = st.number_input("714 - Manutenzioni", min_value=0.0, value=0.0, step=100.0, key="a_714")
-            a_715 = st.number_input("715 - Altri costi per servizi", min_value=0.0, value=0.0, step=100.0, key="a_715")
+            c702 = st.number_input("702 - Materie prime (Tot)", min_value=0.0, value=0.0, step=1000.0, key="a_702")
+            c704 = st.number_input("704 - Materiali vari (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_704")
+            c709 = st.number_input("709 - Servizi generali (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_709")
+            c713 = st.number_input("713 - Autoveicoli (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_713")
+            c714 = st.number_input("714 - Manutenzioni (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_714")
+            c715 = st.number_input("715 - Altri servizi (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_715")
         with col2:
-            a_717 = st.number_input("717 - Costi godimento beni di terzi", min_value=0.0, value=0.0, step=100.0, key="a_717")
-            a_720 = st.number_input("720 - Spese per lavoro dipendente", min_value=0.0, value=0.0, step=1000.0, key="a_720")
-            a_725 = st.number_input("725 - Ammort. immobilizzazioni immateriali", min_value=0.0, value=0.0, step=100.0, key="a_725")
-            a_727 = st.number_input("727 - Ammort. immobilizzazioni materiali", min_value=0.0, value=0.0, step=100.0, key="a_727")
-            a_735 = st.number_input("735 - Imposte e tasse", min_value=0.0, value=0.0, step=100.0, key="a_735")
-            a_737 = st.number_input("737/748 - Altri oneri / Straordinari", min_value=0.0, value=0.0, step=100.0, key="a_737")
+            c717 = st.number_input("717 - Godimento beni (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_717")
+            c720 = st.number_input("720 - Lavoro dipendente (Tot)", min_value=0.0, value=0.0, step=1000.0, key="a_720")
+            c725 = st.number_input("725 - Ammort. immat. (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_725")
+            c727 = st.number_input("727 - Ammort. mat. (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_727")
+            c735 = st.number_input("735 - Imposte e tasse (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_735")
+            c737 = st.number_input("737/748 - Altri oneri (Tot)", min_value=0.0, value=0.0, step=100.0, key="a_737")
+        totale = c702+c704+c709+c713+c714+c715+c717+c720+c725+c727+c735+c737
+        st.markdown(f"**💰 Totale Aziendale: € {totale:,.2f}**")
+        return totale
 
-        totale_aziendale = a_702 + a_704 + a_709 + a_713 + a_714 + a_715 + a_717 + a_720 + a_725 + a_727 + a_735 + a_737
-        st.markdown(f"**💰 Totale Aziendale: € {totale_aziendale:,.2f}**")
-        costi_aziendali = {'totale': totale_aziendale}
-
-# ============================================================
-# 5. CALCOLO TOTALI PER SEDE
-# ============================================================
 if "Opzione A" in modalita_inserimento:
-    totale_costi_montignoso_periodo = costi_montignoso['totale']
-    totale_costi_grosseto_periodo = costi_grosseto['totale']
+    tot_mont = crea_campi_sede("m", "MONTIGNOSO")
+    tot_gros = crea_campi_sede("g", "GROSSETO")
+    tot_mont_periodo, tot_gros_periodo = tot_mont, tot_gros
 else:
-    totale_aziendale_periodo = costi_aziendali['totale']
-    kg_montignoso = df[df['Luogo'] == 'Montignoso']['Produzione_2025'].sum()
-    kg_grosseto = df[df['Luogo'] == 'Grosseto']['Produzione_2025'].sum()
-    kg_totali = kg_montignoso + kg_grosseto
-
-    if kg_totali > 0:
-        pct_montignoso_kg = (kg_montignoso / kg_totali) * 100
-        pct_grosseto_kg = (kg_grosseto / kg_totali) * 100
+    tot_aziendale = crea_campi_aziendali()
+    # Ripartizione per kg sulla base attiva
+    df_base = df25 if "2025" in base_scelta else df26
+    kg_m = df_base[df_base['Luogo']=='Montignoso']['Kg'].sum()
+    kg_g = df_base[df_base['Luogo']=='Grosseto']['Kg'].sum()
+    kg_tot = kg_m + kg_g
+    if kg_tot > 0:
+        tot_mont_periodo = tot_aziendale * (kg_m / kg_tot)
+        tot_gros_periodo = tot_aziendale * (kg_g / kg_tot)
     else:
-        pct_montignoso_kg = 50
-        pct_grosseto_kg = 50
+        tot_mont_periodo = tot_gros_periodo = tot_aziendale / 2
 
-    totale_costi_montignoso_periodo = totale_aziendale_periodo * (pct_montignoso_kg / 100)
-    totale_costi_grosseto_periodo = totale_aziendale_periodo * (pct_grosseto_kg / 100)
-
-budget_montignoso_periodo = totale_costi_montignoso_periodo + (totale_costi_comuni * (pct_montignoso_comuni / 100))
-budget_grosseto_periodo = totale_costi_grosseto_periodo + (totale_costi_comuni * (pct_grosseto_comuni / 100))
-
-budget_montignoso = budget_montignoso_periodo * moltiplicatore
-budget_grosseto = budget_grosseto_periodo * moltiplicatore
-totale_costi_annuali = (totale_costi_montignoso_periodo + totale_costi_grosseto_periodo + totale_costi_comuni) * moltiplicatore
+# Budget per sede (periodo + comuni)
+budget_mont_periodo = tot_mont_periodo + (totale_costi_comuni * pct_montignoso_comuni / 100)
+budget_gros_periodo = tot_gros_periodo + (totale_costi_comuni * pct_grosseto_comuni / 100)
+budget_mont = budget_mont_periodo * moltiplicatore
+budget_gros = budget_gros_periodo * moltiplicatore
+totale_costi_annuali = (tot_mont_periodo + tot_gros_periodo + totale_costi_comuni) * moltiplicatore
 
 # ============================================================
-# 6. COEFFICIENTE DI COMPLESSITÀ
+# 6. COEFFICIENTE DI COMPLESSITÀ (condiviso tra basi)
 # ============================================================
 st.markdown("---")
-st.subheader("️ Coefficiente di Complessità")
-st.markdown("Modifica il coefficiente direttamente nella tabella. **1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
+st.subheader("⚙️ Coefficiente di Complessità")
+st.markdown("**1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
 
+# Unione articoli unici per il gestore coefficienti
+df_coeff_base = pd.concat([df25[['Articolo','Descrizione']], df26[['Articolo','Descrizione']]]).drop_duplicates('Articolo')
 if 'df_coeff' not in st.session_state:
-    st.session_state['df_coeff'] = df[['Luogo', 'Articolo', 'Descrizione', 'Peso', 'Produzione_2025', 'Coefficiente']].copy()
+    df_coeff_base['Coefficiente'] = 1.00
+    st.session_state['df_coeff'] = df_coeff_base.copy()
 
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-
 with col_btn1:
     if st.button("🔄 Reset tutti a 1.00"):
         st.session_state['df_coeff']['Coefficiente'] = 1.00
         st.rerun()
-
 with col_btn2:
     if st.button("🟡 Imposta Ripieni a 1.30"):
-        parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
-        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
+        parole = ['tortello','raviolo','gnudo','tordello','pansoti','cannelloni','cappelletto','ravioli']
+        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
         st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.30
         st.rerun()
-
 with col_btn3:
     if st.button("🔵 Pasta Semplice a 1.00"):
-        parole_ripieni = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
-        mask_ripieni = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_ripieni))
-        st.session_state['df_coeff'].loc[~mask_ripieni, 'Coefficiente'] = 1.00
+        parole = ['tortello','raviolo','gnudo','tordello','pansoti','cannelloni','cappelletto','ravioli']
+        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
+        st.session_state['df_coeff'].loc[~mask, 'Coefficiente'] = 1.00
         st.rerun()
-
 with col_btn4:
     if st.button("🟢 Gnocchi/Lasagne a 1.10"):
-        parole_medie = ['gnocchi', 'gnudi', 'lasagne', 'topetti', 'torta']
-        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole_medie))
+        parole = ['gnocchi','gnudi','lasagne','topetti','torta']
+        mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
         st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.10
         st.rerun()
 
-column_config = {
-    "Coefficiente": st.column_config.SelectboxColumn(
-        "Coeff. Complessità",
-        help="Seleziona il livello di complessità produttiva",
-        options=[1.00, 1.10, 1.20, 1.30],
-        default=1.00
-    )
-}
-
 df_editato = st.data_editor(
     st.session_state['df_coeff'],
-    column_config=column_config,
-    use_container_width=True,
-    hide_index=True,
-    num_rows="fixed",
-    key="editor_coeff"
+    column_config={"Coefficiente": st.column_config.SelectboxColumn("Coeff.", options=[1.00,1.10,1.20,1.30], default=1.00)},
+    use_container_width=True, hide_index=True, num_rows="fixed", key="editor_coeff"
 )
-
 st.session_state['df_coeff'] = df_editato
-df['Coefficiente'] = df_editato['Coefficiente']
+
+# Applica coefficienti a entrambe le basi
+map_coeff = df_editato.set_index('Articolo')['Coefficiente']
+df25['Coefficiente'] = df25['Articolo'].map(map_coeff).fillna(1.00)
+df26['Coefficiente'] = df26['Articolo'].map(map_coeff).fillna(1.00)
 
 # ============================================================
-# 7. MOTORE DI CALCOLO
+# 7. MOTORE DI CALCOLO (funzione riutilizzabile)
 # ============================================================
-df['Produzione_Ponderata'] = df['Produzione_2025'] * df['Coefficiente']
+def calcola_base(df, budget_m, budget_g, fattore_proj):
+    df = df.copy()
+    df['Produzione_Ponderata'] = df['Kg'] * df['Coefficiente']
+    df['Vaschette_Proiettate'] = df['N_Vaschette'] * fattore_proj
+    df['Quota_Costi'] = 0.0
+    df['Costo_per_Vaschetta'] = 0.0
+    for sede, budget in [('Montignoso', budget_m), ('Grosseto', budget_g)]:
+        mask = df['Luogo'] == sede
+        tot_pond = df.loc[mask, 'Produzione_Ponderata'].sum()
+        if tot_pond > 0 and budget > 0:
+            df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_Ponderata'] / tot_pond) * budget
+            df.loc[mask, 'Costo_per_Vaschetta'] = df.loc[mask, 'Quota_Costi'] / df.loc[mask, 'Vaschette_Proiettate'].replace(0, pd.NA)
+    df['Costo_per_Vaschetta'] = df['Costo_per_Vaschetta'].fillna(0)
+    return df
 
-df['Quota_Costi'] = 0.0
-df['Costo_per_Vaschetta'] = 0.0
+res25 = calcola_base(df25, budget_mont, budget_gros, 1)
+res26 = calcola_base(df26, budget_mont, budget_gros, fattore_proiezione)
 
-for sede, budget_sede in [('Montignoso', budget_montignoso), ('Grosseto', budget_grosseto)]:
-    mask = df['Luogo'] == sede
-    tot_ponderato_sede = df.loc[mask, 'Produzione_Ponderata'].sum()
+# Selezione base attiva
+if "2025" in base_scelta:
+    df_attivo, label_base = res25, "2025"
+elif "2026" in base_scelta:
+    df_attivo, label_base = res26, "2026"
+else:
+    df_attivo, label_base = res25, "2025 (con confronto)"
 
-    if tot_ponderato_sede > 0 and budget_sede > 0:
-        df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_Ponderata'] / tot_ponderato_sede) * budget_sede
-        df.loc[mask, 'Costo_per_Vaschetta'] = df.loc[mask, 'Quota_Costi'] / df.loc[mask, 'N_Vaschette']
-
-totale_vaschette = df['N_Vaschette'].sum()
-costo_medio_vaschetta = totale_costi_annuali / totale_vaschette if totale_vaschette > 0 else 0.0
+totale_vaschette = df_attivo['Vaschette_Proiettate'].sum()
+costo_medio = totale_costi_annuali / totale_vaschette if totale_vaschette > 0 else 0
 
 # ============================================================
-# 8. DASHBOARD KPI
+# 8. KPI
 # ============================================================
 st.markdown("---")
-st.subheader("📊 Risultati della Ripartizione")
-
+st.subheader(f"📊 Risultati della Ripartizione - Base {label_base}")
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("📦 Produzione Totale 2025", f"{df['Produzione_2025'].sum():,.2f} kg")
-col2.metric("📦 Vaschette Totali", f"{totale_vaschette:,.0f}")
-col3.metric("⚖️ Produzione Ponderata", f"{df['Produzione_Ponderata'].sum():,.2f}")
-col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio_vaschetta:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
+col1.metric("📦 Produzione Totale", f"{df_attivo['Kg'].sum():,.2f} kg")
+col2.metric("📦 Vaschette", f"{totale_vaschette:,.0f}")
+col3.metric("⚖️ Produzione Ponderata", f"{df_attivo['Produzione_Ponderata'].sum():,.2f}")
+col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
-# ============================================================
-# 9. INSIGHT AUTOMATICO E GRAFICI
-# ============================================================
 if totale_costi_annuali > 0:
-    # Insight automatico
-    max_cost_idx = df['Costo_per_Vaschetta'].idxmax()
-    min_cost_idx = df['Costo_per_Vaschetta'].idxmin()
-    st.info(f"💡 **Insight Automatico:** Il prodotto con il costo di struttura più alto è **{df.loc[max_cost_idx, 'Descrizione']}** (€ {df.loc[max_cost_idx, 'Costo_per_Vaschetta']:.4f}/vaschetta). Il più efficiente è **{df.loc[min_cost_idx, 'Descrizione']}** (€ {df.loc[min_cost_idx, 'Costo_per_Vaschetta']:.4f}/vaschetta).")
-
-    st.markdown("---")
-    st.subheader("📈 Analisi Grafica dei Costi")
-
-    col_graf1, col_graf2 = st.columns(2)
-
-    with col_graf1:
-        st.markdown("##### 🥧 Distribuzione Costi tra Sedi")
-        # Grafico con colori distinti per sede
-        df_sedi_colori = pd.DataFrame({
-            'Montignoso': [budget_montignoso],
-            'Grosseto': [budget_grosseto]
-        }, index=['Costi (€)'])
-        st.bar_chart(df_sedi_colori, use_container_width=True)
-
-        pct_mont = (budget_montignoso / totale_costi_annuali) * 100 if totale_costi_annuali > 0 else 0
-        pct_gros = (budget_grosseto / totale_costi_annuali) * 100 if totale_costi_annuali > 0 else 0
-        st.markdown(f"""
-        | Sede | Costi | % sul Totale |
-        |------|-------|--------------|
-        | 🏭 Montignoso | € {budget_montignoso:,.2f} | {pct_mont:.1f}% |
-        | 🏭 Grosseto | € {budget_grosseto:,.2f} | {pct_gros:.1f}% |
-        """)
-
-    with col_graf2:
-        st.markdown("##### 📊 Top 10 Prodotti per Costo/Vaschetta")
-        top10 = df.nlargest(10, 'Costo_per_Vaschetta').copy()
-        chart_data = pd.DataFrame({
-            'Prodotto': top10['Descrizione'].str[:30],
-            'Costo/Vaschetta (€)': top10['Costo_per_Vaschetta']
-        }).set_index('Prodotto')
-        st.bar_chart(chart_data, use_container_width=True)
-
-    st.markdown("---")
-    st.markdown("##### 🏭 Confronto Produzione e Costi tra Sedi")
-
-    kg_mont = df[df['Luogo'] == 'Montignoso']['Produzione_2025'].sum()
-    kg_gros = df[df['Luogo'] == 'Grosseto']['Produzione_2025'].sum()
-    vasch_mont = df[df['Luogo'] == 'Montignoso']['N_Vaschette'].sum()
-    vasch_gros = df[df['Luogo'] == 'Grosseto']['N_Vaschette'].sum()
-    costo_medio_mont = budget_montignoso / vasch_mont if vasch_mont > 0 else 0
-    costo_medio_gros = budget_grosseto / vasch_gros if vasch_gros > 0 else 0
-
-    col_c1, col_c2, col_c3 = st.columns(3)
-
-    with col_c1:
-        st.markdown("**Produzione (kg)**")
-        df_kg = pd.DataFrame({'Montignoso': [kg_mont], 'Grosseto': [kg_gros]}, index=['Kg'])
-        st.bar_chart(df_kg, use_container_width=True)
-
-    with col_c2:
-        st.markdown("**N. Vaschette**")
-        df_vasch = pd.DataFrame({'Montignoso': [vasch_mont], 'Grosseto': [vasch_gros]}, index=['Vaschette'])
-        st.bar_chart(df_vasch, use_container_width=True)
-
-    with col_c3:
-        st.markdown("**Costo medio/vaschetta (€)**")
-        df_costo = pd.DataFrame({'Montignoso': [costo_medio_mont], 'Grosseto': [costo_medio_gros]}, index=['€/vaschetta'])
-        st.bar_chart(df_costo, use_container_width=True)
-
-else:
-    st.info("💡 Inserisci i costi nella sidebar per visualizzare i grafici analitici.")
+    max_idx = df_attivo['Costo_per_Vaschetta'].idxmax()
+    min_idx = df_attivo['Costo_per_Vaschetta'].idxmin()
+    st.info(f"💡 **Insight:** Prodotto più costoso: **{df_attivo.loc[max_idx,'Descrizione']}** (€ {df_attivo.loc[max_idx,'Costo_per_Vaschetta']:.4f}). Più efficiente: **{df_attivo.loc[min_idx,'Descrizione']}** (€ {df_attivo.loc[min_idx,'Costo_per_Vaschetta']:.4f}).")
 
 # ============================================================
-# 10. TABELLA DETTAGLIATA CON SEMAFORO
+# 9. CONFRONTO 2025 vs 2026
+# ============================================================
+if "Confronto" in base_scelta:
+    st.markdown("---")
+    st.subheader("🔄 Confronto 2025 vs 2026 (a parità di costi inseriti)")
+    st.caption("Mostra come il cambio di mix produttivo impatta sul costo/vaschetta, mantenendo fissi i costi inseriti.")
+
+    cmp = df25[['Articolo','Descrizione','Luogo','Kg','N_Vaschette','Costo_per_Vaschetta']].merge(
+        df26[['Articolo','Kg','N_Vaschette','Costo_per_Vaschetta']], on='Articolo', how='outer',
+        suffixes=('_2025','_2026'))
+    cmp = cmp.fillna(0)
+    cmp['Var_Kg'] = cmp['Kg_2026'] - cmp['Kg_2025']
+    cmp['Var_%'] = cmp.apply(lambda r: (r['Var_Kg']/r['Kg_2025']*100) if r['Kg_2025']>0 else 100, axis=1)
+    cmp['Delta_Costo'] = cmp['Costo_per_Vaschetta_2026'] - cmp['Costo_per_Vaschetta_2025']
+    cmp = cmp.sort_values('Var_Kg', ascending=False)
+
+    k1, k2, k3 = st.columns(3)
+    k1.metric("Kg 2025", f"{cmp['Kg_2025'].sum():,.0f}")
+    k2.metric("Kg 2026 (gen-lug)", f"{cmp['Kg_2026'].sum():,.0f}")
+    k3.metric("Variazione", f"{cmp['Var_Kg'].sum():+,.0f} kg")
+
+    cmp_show = cmp[['Descrizione','Luogo','Kg_2025','Kg_2026','Var_%','Costo_per_Vaschetta_2025','Costo_per_Vaschetta_2026','Delta_Costo']].copy()
+    cmp_show['Var_%'] = cmp_show['Var_%'].map(lambda x: f"{x:+.1f}%")
+    cmp_show['Costo 2025'] = cmp_show['Costo_per_Vaschetta_2025'].map(lambda x: f"€ {x:.4f}")
+    cmp_show['Costo 2026'] = cmp_show['Costo_per_Vaschetta_2026'].map(lambda x: f"€ {x:.4f}")
+    cmp_show['Delta'] = cmp_show['Delta_Costo'].map(lambda x: f"{x:+.4f}")
+    st.dataframe(cmp_show[['Descrizione','Luogo','Kg_2025','Kg_2026','Var_%','Costo 2025','Costo 2026','Delta']].rename(
+        columns={'Descrizione':'Prodotto','Luogo':'Sede','Kg_2025':'Kg 2025','Kg_2026':'Kg 2026'}),
+        use_container_width=True, hide_index=True)
+
+# ============================================================
+# 10. TABELLA DETTAGLIATA BASE ATTIVA
 # ============================================================
 st.markdown("---")
 col_f1, col_f2 = st.columns(2)
 with col_f1:
     filtro_sede = st.selectbox("Filtra per Sede", ["Tutte", "Montignoso", "Grosseto"])
 with col_f2:
-    ricerca = st.text_input(" Cerca prodotto...", "")
+    ricerca = st.text_input("🔍 Cerca prodotto...", "")
 
-df_vis = df.copy()
+df_vis = df_attivo.copy()
 if filtro_sede != "Tutte":
     df_vis = df_vis[df_vis['Luogo'] == filtro_sede]
 if ricerca:
     df_vis = df_vis[df_vis['Descrizione'].str.contains(ricerca, case=False, na=False)]
-
 df_vis = df_vis.sort_values('Quota_Costi', ascending=False)
 
-st.subheader(f"📋 Dettaglio Prodotti ({len(df_vis)} prodotti)")
+st.subheader(f"📋 Dettaglio Prodotti Base {label_base} ({len(df_vis)} prodotti)")
 
-# Calcolo semaforo visivo
-def calcola_semaforo(row):
-    if row['Costo_per_Vaschetta'] == 0:
-        return "⚪"
-    elif row['Costo_per_Vaschetta'] < costo_medio_vaschetta * 0.7:
-        return "🟢"
-    elif row['Costo_per_Vaschetta'] < costo_medio_vaschetta * 1.3:
-        return "🟡"
-    else:
-        return "🔴"
+def semaforo(row):
+    if row['Costo_per_Vaschetta'] == 0: return "⚪"
+    elif row['Costo_per_Vaschetta'] < costo_medio * 0.7: return "🟢"
+    elif row['Costo_per_Vaschetta'] < costo_medio * 1.3: return "🟡"
+    else: return "🔴"
 
-df_vis['Semaforo'] = df_vis.apply(calcola_semaforo, axis=1)
-
+df_vis = df_vis.copy()
+df_vis['Semaforo'] = df_vis.apply(semaforo, axis=1)
 df_table = df_vis.copy()
 df_table['Peso_kg'] = df_table['Peso'].map(lambda x: f"{x} kg")
-df_table['Produzione'] = df_table['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
-df_table['Vaschette'] = df_table['N_Vaschette'].map(lambda x: f"{x:,.0f}")
+df_table['Produzione'] = df_table['Kg'].map(lambda x: f"{x:,.2f} kg")
+df_table['Vaschette'] = df_table['Vaschette_Proiettate'].map(lambda x: f"{x:,.0f}")
+df_table['% Sede'] = df_table.apply(lambda r: (r['Produzione_Ponderata']/df_attivo[df_attivo['Luogo']==r['Luogo']]['Produzione_Ponderata'].sum()*100) if df_attivo[df_attivo['Luogo']==r['Luogo']]['Produzione_Ponderata'].sum()>0 else 0, axis=1).map(lambda x: f"{x:.3f}%")
+df_table['Quota'] = df_table['Quota_Costi'].map(lambda x: f"€ {x:,.2f}")
+df_table['Costo/Vasch'] = df_table['Costo_per_Vaschetta'].map(lambda x: f"€ {x:.4f}")
 
-def calcola_pct_sede(row):
-    mask_sede = df['Luogo'] == row['Luogo']
-    tot_ponderato_sede = df.loc[mask_sede, 'Produzione_Ponderata'].sum()
-    if tot_ponderato_sede > 0:
-        return (row['Produzione_Ponderata'] / tot_ponderato_sede) * 100
-    return 0.0
-
-df_table['% Incidenza Sede'] = df_table.apply(calcola_pct_sede, axis=1).map(lambda x: f"{x:.3f}%")
-df_table['Quota Costi'] = df_table['Quota_Costi'].map(lambda x: f"€ {x:,.2f}")
-df_table['Costo/Vaschetta'] = df_table['Costo_per_Vaschetta'].map(lambda x: f"€ {x:.4f}")
-
-colonne_display = ['Semaforo', 'Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione',
-                   'Vaschette', 'Coefficiente', '% Incidenza Sede', 'Quota Costi', 'Costo/Vaschetta']
-
-st.dataframe(
-    df_table[colonne_display].rename(columns={
-        'Semaforo': 'Livello', 'Luogo': 'Sede', 'Articolo': 'Cod.', 'Descrizione': 'Prodotto',
-        'Peso_kg': 'Peso', 'Produzione': 'Produz. 2025', 'Vaschette': 'N. Vaschette',
-        'Coefficiente': 'Coeff.', '% Incidenza Sede': '% Ripartizione Sede',
-        'Quota Costi': 'Quota Costi Assegnata', 'Costo/Vaschetta': 'Costo Gen./Vaschetta'
-    }),
-    use_container_width=True, hide_index=True
-)
-
-# Legenda semaforo
-st.markdown("""
-<div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-top: 10px;">
-    <b>Legenda Semaforo:</b> 🟢 Costo sotto la media | 🟡 Costo nella media | 🔴 Costo sopra la media | ⚪ Nessun costo
-</div>
-""", unsafe_allow_html=True)
+st.dataframe(df_table[['Semaforo','Luogo','Articolo','Descrizione','Peso_kg','Produzione','Vaschette','Coefficiente','% Sede','Quota','Costo/Vasch']].rename(
+    columns={'Semaforo':'Livello','Luogo':'Sede','Articolo':'Cod.','Descrizione':'Prodotto','Peso_kg':'Peso',
+             'Produzione':f'Produz. {label_base}','Vaschette':'N. Vaschette','Coefficiente':'Coeff.',
+             '% Sede':'% Ripart. Sede','Quota':'Quota Costi','Costo/Vasch':'Costo Gen./Vaschetta'}),
+    use_container_width=True, hide_index=True)
 
 # ============================================================
-# 11. TOP 20 PRODOTTI
-# ============================================================
-st.markdown("---")
-st.subheader("🏆 Top 20 Prodotti per Volume di Produzione")
-
-top20 = df.nlargest(20, 'Produzione_2025')[['Luogo', 'Articolo', 'Descrizione', 'Produzione_2025']].copy()
-top20['Produzione_2025'] = top20['Produzione_2025'].map(lambda x: f"{x:,.2f} kg")
-
-st.dataframe(
-    top20.rename(columns={
-        'Luogo': 'Sede', 'Articolo': 'Cod.', 'Descrizione': 'Prodotto', 'Produzione_2025': 'Produzione'
-    }),
-    use_container_width=True, hide_index=True
-)
-
-# ============================================================
-# 12. FORMULA DI CALCOLO
-# ============================================================
-with st.expander("📐 Vedi formula di calcolo e logica applicata"):
-    st.markdown("""
-    **Logica di Ripartizione:**
-
-    1. **Separazione Costi:** I costi di Produzione/Confezionamento vengono attribuiti direttamente alla sede di competenza (Opzione A) o ripartiti per kg (Opzione B). I costi Comuni (Trasporti vettore, Interessi passivi, Scontistica promozionale) vengono ripartiti tra le sedi in base alla percentuale definita dallo slider.
-
-    2. **Produzione Ponderata:** Per ogni prodotto: `Produzione (kg) × Coefficiente di Complessità`.
-
-    3. **Ripartizione per Sede:** I costi totali di ogni sede (Diretti + Quota Comuni) vengono ripartiti sui prodotti di *quella specifica sede* in base alla loro % di Produzione Ponderata.
-
-    4. **Costo per Vaschetta:** `Quota Costi Assegnata al Prodotto ÷ Numero Vaschette Prodotte`.
-    """)
-
-# ============================================================
-# 13. EXPORT CSV
+# 11. EXPORT
 # ============================================================
 st.markdown("---")
 st.subheader("💾 Esporta Dati")
-
-csv = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
-st.download_button(
-    label="📥 Scarica analisi completa in CSV",
-    data=csv,
-    file_name=f'pastai_costi_{datetime.now().strftime("%Y%m%d")}.csv',
-    mime='text/csv'
-)
+csv = df_attivo.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
+st.download_button(label="📥 Scarica analisi completa in CSV", data=csv,
+    file_name=f'pastai_costi_base{label_base}_{datetime.now().strftime("%Y%m%d")}.csv', mime='text/csv')
 
 st.markdown("---")
-st.caption("Dati produzione 2025 | Inserimento costi manuale | Ripartizione ponderata per sede e complessità")
+st.caption("Dati produzione 2025 e 2026 | Inserimento costi manuale | Doppia base di ripartizione")
