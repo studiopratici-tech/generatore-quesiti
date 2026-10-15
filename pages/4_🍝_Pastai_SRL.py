@@ -18,7 +18,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🍝 Pastai SRL - Ripartizione Costi per Prodotto e Vaschetta")
-st.markdown("Strumento di controllo di gestione con doppia base di ripartizione (2025 e 2026).")
+st.markdown("Anagrafica unica 2025+2026 | Ripartizione ponderata per sede e complessità")
 st.markdown("---")
 
 # ============================================================
@@ -77,7 +77,7 @@ grosseto_2025 = {
 }
 
 # ============================================================
-# 3. DATI PRODUZIONE 2026 (gen-lug, reali)
+# 3. DATI PRODUZIONE 2026 (fallback hardcoded = file gen-ago)
 # ============================================================
 montignoso_2026 = {
     'Luogo': ['Montignoso'] * 39,
@@ -137,14 +137,8 @@ grosseto_2026 = {
            4528.25,6208.25]
 }
 
-# Costruzione dataframe
 df25 = pd.concat([pd.DataFrame(montignoso_2025), pd.DataFrame(grosseto_2025)], ignore_index=True)
-df26 = pd.concat([pd.DataFrame(montignoso_2026), pd.DataFrame(grosseto_2026)], ignore_index=True)
-
-df25['N_Vaschette'] = df25['Kg'] / df25['Peso']
-df26['N_Vaschette'] = df26['Kg'] / df26['Peso']
-df25['Coefficiente'] = 1.00
-df26['Coefficiente'] = 1.00
+df26_hard = pd.concat([pd.DataFrame(montignoso_2026), pd.DataFrame(grosseto_2026)], ignore_index=True)
 
 # ============================================================
 # 4. SIDEBAR
@@ -155,10 +149,56 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🗓️ Base di Ripartizione")
 base_scelta = st.sidebar.radio(
     "Seleziona la base di calcolo:",
-    ["Base 2025 (storica)", "Base 2026 (reale gen-lug)", "Confronto 2025 vs 2026"],
+    ["Base 2025 (storica)", "Base 2026 (reale)", "Confronto 2025 vs 2026"],
     index=0
 )
 
+# --- UPLOAD EXCEL 2026 (opzionale) ---
+st.sidebar.subheader("📂 Aggiorna dati 2026")
+up_m = st.sidebar.file_uploader("Excel Montignoso", type=["xlsx", "csv"])
+up_g = st.sidebar.file_uploader("Excel Grosseto", type=["xlsx", "csv"])
+
+def leggi_file_produttivita(file):
+    """Parser robusto: salta le righe di titolo e trova l'intestazione."""
+    try:
+        if file.name.lower().endswith('.csv'):
+            raw = pd.read_csv(file, header=None)
+        else:
+            raw = pd.read_excel(file, header=None)
+        idx = raw.index[(raw.astype(str) == 'Articolo').any(axis=1)]
+        if len(idx) == 0:
+            return None
+        hdr = idx[0]
+        raw.columns = [str(c).strip() for c in raw.iloc[hdr]]
+        d = raw.iloc[hdr + 1:].reset_index(drop=True)
+        d = d[d['Articolo'].notna() & d['Luogo_Produzione'].notna()]
+        d = d[d['Luogo_Produzione'].isin(['Montignoso', 'Grosseto'])]
+        if 'Totale_2026' in d.columns:
+            d['Kg'] = pd.to_numeric(d['Totale_2026'], errors='coerce').fillna(0)
+        else:
+            mesi = [c for c in d.columns if '_2026' in str(c) and str(c)[0].upper() in 'GFMAJSOND']
+            for c in mesi:
+                d[c] = pd.to_numeric(d[c], errors='coerce').fillna(0)
+            d['Kg'] = d[mesi].sum(axis=1)
+        d['Peso'] = pd.to_numeric(d['Peso'], errors='coerce')
+        out = d[['Luogo_Produzione', 'Articolo', 'Descrizione_Articolo', 'Peso', 'Kg']].copy()
+        out.columns = ['Luogo', 'Articolo', 'Descrizione', 'Peso', 'Kg']
+        out['Articolo'] = out['Articolo'].astype(str).str.strip()
+        return out
+    except Exception as e:
+        st.sidebar.error(f"Errore lettura file: {e}")
+        return None
+
+df26 = df26_hard.copy()
+if up_m is not None and up_g is not None:
+    pm, pg = leggi_file_produttivita(up_m), leggi_file_produttivita(up_g)
+    if pm is not None and pg is not None:
+        df26 = pd.concat([pm, pg], ignore_index=True)
+        st.sidebar.success("✅ Dati 2026 aggiornati dai file!")
+elif up_m is not None or up_g is not None:
+    st.sidebar.warning("Carica entrambi i file (Montignoso e Grosseto)")
+
+st.sidebar.markdown("---")
 st.sidebar.subheader("📅 Periodo di riferimento")
 periodo = st.sidebar.selectbox(
     "Il bilancio copre:",
@@ -171,12 +211,8 @@ else:
     moltiplicatore_map = {"Annuale (x1)": 1, "Semestrale (x2)": 2, "Trimestrale (x4)": 4, "Bimestrale (x6)": 6}
     moltiplicatore = moltiplicatore_map[periodo]
 st.sidebar.info(f"📌 I costi inseriti verranno moltiplicati per **{moltiplicatore}**.")
-
 if "2026" in base_scelta:
-    mesi_2026 = st.sidebar.slider("Mesi di riferimento 2026", 1, 12, 7, help="I dati 2026 coprono gen-lug (7 mesi). L'app proietta le vaschette su base annua.")
-    fattore_proiezione = 12 / mesi_2026
-else:
-    fattore_proiezione = 1
+    st.sidebar.warning("Base 2026: il costo/vaschetta è calcolato sui dati del periodo. Lascia x1 se i costi inseriti sono già quelli del periodo.")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("⚙️ Modalità di inserimento")
@@ -245,15 +281,13 @@ def crea_campi_aziendali():
         return totale
 
 if "Opzione A" in modalita_inserimento:
-    tot_mont = crea_campi_sede("m", "MONTIGNOSO")
-    tot_gros = crea_campi_sede("g", "GROSSETO")
-    tot_mont_periodo, tot_gros_periodo = tot_mont, tot_gros
+    tot_mont_periodo = crea_campi_sede("m", "MONTIGNOSO")
+    tot_gros_periodo = crea_campi_sede("g", "GROSSETO")
 else:
     tot_aziendale = crea_campi_aziendali()
-    # Ripartizione per kg sulla base attiva
     df_base = df25 if "2025" in base_scelta else df26
-    kg_m = df_base[df_base['Luogo']=='Montignoso']['Kg'].sum()
-    kg_g = df_base[df_base['Luogo']=='Grosseto']['Kg'].sum()
+    kg_m = df_base[df_base['Luogo'] == 'Montignoso']['Kg'].sum()
+    kg_g = df_base[df_base['Luogo'] == 'Grosseto']['Kg'].sum()
     kg_tot = kg_m + kg_g
     if kg_tot > 0:
         tot_mont_periodo = tot_aziendale * (kg_m / kg_tot)
@@ -261,7 +295,6 @@ else:
     else:
         tot_mont_periodo = tot_gros_periodo = tot_aziendale / 2
 
-# Budget per sede (periodo + comuni)
 budget_mont_periodo = tot_mont_periodo + (totale_costi_comuni * pct_montignoso_comuni / 100)
 budget_gros_periodo = tot_gros_periodo + (totale_costi_comuni * pct_grosseto_comuni / 100)
 budget_mont = budget_mont_periodo * moltiplicatore
@@ -269,17 +302,37 @@ budget_gros = budget_gros_periodo * moltiplicatore
 totale_costi_annuali = (tot_mont_periodo + tot_gros_periodo + totale_costi_comuni) * moltiplicatore
 
 # ============================================================
-# 6. COEFFICIENTE DI COMPLESSITÀ (condiviso tra basi)
+# 6. ANAGRAFICA UNICA (unione 2025 + 2026)
+# ============================================================
+base25 = df25[['Luogo', 'Articolo', 'Descrizione', 'Peso']].drop_duplicates('Articolo')
+base26 = df26[['Luogo', 'Articolo', 'Descrizione', 'Peso']].drop_duplicates('Articolo')
+master = base25.merge(base26, on='Articolo', how='outer', suffixes=('_25', '_26'))
+master['Luogo'] = master['Luogo_25'].fillna(master['Luogo_26'])
+master['Descrizione'] = master['Descrizione_25'].fillna(master['Descrizione_26'])
+master['Peso'] = master['Peso_25'].fillna(master['Peso_26'])
+master['In_2025'] = master['Luogo_25'].notna()
+master['In_2026'] = master['Luogo_26'].notna()
+master = master[['Luogo', 'Articolo', 'Descrizione', 'Peso', 'In_2025', 'In_2026']]
+
+b25 = master.merge(df25[['Articolo', 'Kg']].drop_duplicates('Articolo'), on='Articolo', how='left')
+b25['Kg'] = b25['Kg'].fillna(0)
+b26 = master.merge(df26[['Articolo', 'Kg']].drop_duplicates('Articolo'), on='Articolo', how='left')
+b26['Kg'] = b26['Kg'].fillna(0)
+
+# ============================================================
+# 7. COEFFICIENTE DI COMPLESSITÀ (sull'anagrafica unica)
 # ============================================================
 st.markdown("---")
 st.subheader("⚙️ Coefficiente di Complessità")
 st.markdown("**1.00** = Standard | **1.10** = Leggermente complesso | **1.20** = Complesso | **1.30** = Molto complesso (ripieni)")
 
-# Unione articoli unici per il gestore coefficienti
-df_coeff_base = pd.concat([df25[['Articolo','Descrizione']], df26[['Articolo','Descrizione']]]).drop_duplicates('Articolo')
 if 'df_coeff' not in st.session_state:
-    df_coeff_base['Coefficiente'] = 1.00
-    st.session_state['df_coeff'] = df_coeff_base.copy()
+    st.session_state['df_coeff'] = master[['Articolo', 'Descrizione']].copy()
+    st.session_state['df_coeff']['Coefficiente'] = 1.00
+else:
+    st.session_state['df_coeff'] = master[['Articolo', 'Descrizione']].merge(
+        st.session_state['df_coeff'][['Articolo', 'Coefficiente']], on='Articolo', how='left'
+    ).fillna({'Coefficiente': 1.00})
 
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 with col_btn1:
@@ -288,57 +341,57 @@ with col_btn1:
         st.rerun()
 with col_btn2:
     if st.button("🟡 Imposta Ripieni a 1.30"):
-        parole = ['tortello','raviolo','gnudo','tordello','pansoti','cannelloni','cappelletto','ravioli']
+        parole = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
         mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
         st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.30
         st.rerun()
 with col_btn3:
     if st.button("🔵 Pasta Semplice a 1.00"):
-        parole = ['tortello','raviolo','gnudo','tordello','pansoti','cannelloni','cappelletto','ravioli']
+        parole = ['tortello', 'raviolo', 'gnudo', 'tordello', 'pansoti', 'cannelloni', 'cappelletto', 'ravioli']
         mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
         st.session_state['df_coeff'].loc[~mask, 'Coefficiente'] = 1.00
         st.rerun()
 with col_btn4:
     if st.button("🟢 Gnocchi/Lasagne a 1.10"):
-        parole = ['gnocchi','gnudi','lasagne','topetti','torta']
+        parole = ['gnocchi', 'gnudi', 'lasagne', 'topetti', 'torta']
         mask = st.session_state['df_coeff']['Descrizione'].str.lower().str.contains('|'.join(parole))
         st.session_state['df_coeff'].loc[mask, 'Coefficiente'] = 1.10
         st.rerun()
 
 df_editato = st.data_editor(
     st.session_state['df_coeff'],
-    column_config={"Coefficiente": st.column_config.SelectboxColumn("Coeff.", options=[1.00,1.10,1.20,1.30], default=1.00)},
+    column_config={"Coefficiente": st.column_config.SelectboxColumn("Coeff.", options=[1.00, 1.10, 1.20, 1.30], default=1.00)},
     use_container_width=True, hide_index=True, num_rows="fixed", key="editor_coeff"
 )
 st.session_state['df_coeff'] = df_editato
-
-# Applica coefficienti a entrambe le basi
 map_coeff = df_editato.set_index('Articolo')['Coefficiente']
-df25['Coefficiente'] = df25['Articolo'].map(map_coeff).fillna(1.00)
-df26['Coefficiente'] = df26['Articolo'].map(map_coeff).fillna(1.00)
+b25['Coefficiente'] = b25['Articolo'].map(map_coeff).fillna(1.00)
+b26['Coefficiente'] = b26['Articolo'].map(map_coeff).fillna(1.00)
 
 # ============================================================
-# 7. MOTORE DI CALCOLO (funzione riutilizzabile)
+# 8. MOTORE DI CALCOLO (con costo standard per prodotti mancanti)
 # ============================================================
-def calcola_base(df, budget_m, budget_g, fattore_proj):
-    df = df.copy()
-    df['Produzione_Ponderata'] = df['Kg'] * df['Coefficiente']
-    df['Vaschette_Proiettate'] = df['N_Vaschette'] * fattore_proj
-    df['Quota_Costi'] = 0.0
-    df['Costo_per_Vaschetta'] = 0.0
-    for sede, budget in [('Montignoso', budget_m), ('Grosseto', budget_g)]:
-        mask = df['Luogo'] == sede
-        tot_pond = df.loc[mask, 'Produzione_Ponderata'].sum()
-        if tot_pond > 0 and budget > 0:
-            df.loc[mask, 'Quota_Costi'] = (df.loc[mask, 'Produzione_Ponderata'] / tot_pond) * budget
-            df.loc[mask, 'Costo_per_Vaschetta'] = df.loc[mask, 'Quota_Costi'] / df.loc[mask, 'Vaschette_Proiettate'].replace(0, pd.NA)
-    df['Costo_per_Vaschetta'] = df['Costo_per_Vaschetta'].fillna(0)
-    return df
+def calcola_base(df, budget_m, budget_g, anno):
+    d = df.copy()
+    d['Produzione_Ponderata'] = d['Kg'] * d['Coefficiente']
+    d['N_Vaschette'] = (d['Kg'] / d['Peso']).replace([float('inf'), -float('inf')], 0).fillna(0)
+    d['Quota_Costi'] = 0.0
+    d['Costo_per_Vaschetta'] = 0.0
+    for sede, B in [('Montignoso', budget_m), ('Grosseto', budget_g)]:
+        mask = d['Luogo'] == sede
+        W = d.loc[mask, 'Produzione_Ponderata'].sum()
+        if W > 0 and B > 0:
+            # Costo/vaschetta = Coeff x Peso x Budget / W  (indipendente dai volumi del prodotto)
+            unit = d.loc[mask, 'Coefficiente'] * d.loc[mask, 'Peso'] * B / W
+            d.loc[mask, 'Costo_per_Vaschetta'] = unit
+            d.loc[mask, 'Quota_Costi'] = unit * d.loc[mask, 'N_Vaschette']
+    col_flag = 'In_2025' if anno == 2025 else 'In_2026'
+    d['Stato'] = d.apply(lambda r: '✅' if r['Kg'] > 0 else ('🆕' if not r[col_flag] else '💤'), axis=1)
+    return d
 
-res25 = calcola_base(df25, budget_mont, budget_gros, 1)
-res26 = calcola_base(df26, budget_mont, budget_gros, fattore_proiezione)
+res25 = calcola_base(b25, budget_mont, budget_gros, 2025)
+res26 = calcola_base(b26, budget_mont, budget_gros, 2026)
 
-# Selezione base attiva
 if "2025" in base_scelta:
     df_attivo, label_base = res25, "2025"
 elif "2026" in base_scelta:
@@ -346,58 +399,64 @@ elif "2026" in base_scelta:
 else:
     df_attivo, label_base = res25, "2025 (con confronto)"
 
-totale_vaschette = df_attivo['Vaschette_Proiettate'].sum()
+totale_vaschette = df_attivo['N_Vaschette'].sum()
 costo_medio = totale_costi_annuali / totale_vaschette if totale_vaschette > 0 else 0
 
 # ============================================================
-# 8. KPI
+# 9. KPI
 # ============================================================
 st.markdown("---")
 st.subheader(f"📊 Risultati della Ripartizione - Base {label_base}")
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("📦 Produzione Totale", f"{df_attivo['Kg'].sum():,.2f} kg")
-col2.metric("📦 Vaschette", f"{totale_vaschette:,.0f}")
+col2.metric("📦 Vaschette Prodotte", f"{totale_vaschette:,.0f}")
 col3.metric("⚖️ Produzione Ponderata", f"{df_attivo['Produzione_Ponderata'].sum():,.2f}")
 col4.metric("💰 Costo Medio/Vaschetta", f"€ {costo_medio:.4f}" if totale_costi_annuali > 0 else "€ 0,0000")
 
+n_prodotti = len(df_attivo)
+n_attivi = (df_attivo['Kg'] > 0).sum()
+st.caption(f"Anagrafica unica: {n_prodotti} prodotti | {n_attivi} prodotti nel periodo | {n_prodotti - n_attivi} con costo standard (✅ prodotti / 🆕 nuovi / 💤 dormienti)")
+
 if totale_costi_annuali > 0:
-    max_idx = df_attivo['Costo_per_Vaschetta'].idxmax()
-    min_idx = df_attivo['Costo_per_Vaschetta'].idxmin()
-    st.info(f"💡 **Insight:** Prodotto più costoso: **{df_attivo.loc[max_idx,'Descrizione']}** (€ {df_attivo.loc[max_idx,'Costo_per_Vaschetta']:.4f}). Più efficiente: **{df_attivo.loc[min_idx,'Descrizione']}** (€ {df_attivo.loc[min_idx,'Costo_per_Vaschetta']:.4f}).")
+    df_con_costo = df_attivo[df_attivo['Kg'] > 0]
+    if len(df_con_costo) > 0:
+        max_idx = df_con_costo['Costo_per_Vaschetta'].idxmax()
+        min_idx = df_con_costo['Costo_per_Vaschetta'].idxmin()
+        st.info(f"💡 **Insight:** Prodotto più costoso: **{df_attivo.loc[max_idx, 'Descrizione']}** (€ {df_attivo.loc[max_idx, 'Costo_per_Vaschetta']:.4f}). Più efficiente: **{df_attivo.loc[min_idx, 'Descrizione']}** (€ {df_attivo.loc[min_idx, 'Costo_per_Vaschetta']:.4f}).")
 
 # ============================================================
-# 9. CONFRONTO 2025 vs 2026
+# 10. CONFRONTO 2025 vs 2026 (fix: usa res25/res26)
 # ============================================================
 if "Confronto" in base_scelta:
     st.markdown("---")
     st.subheader("🔄 Confronto 2025 vs 2026 (a parità di costi inseriti)")
     st.caption("Mostra come il cambio di mix produttivo impatta sul costo/vaschetta, mantenendo fissi i costi inseriti.")
 
-    cmp = df25[['Articolo','Descrizione','Luogo','Kg','N_Vaschette','Costo_per_Vaschetta']].merge(
-        df26[['Articolo','Kg','N_Vaschette','Costo_per_Vaschetta']], on='Articolo', how='outer',
-        suffixes=('_2025','_2026'))
+    cmp = res25[['Articolo', 'Descrizione', 'Luogo', 'Kg', 'N_Vaschette', 'Costo_per_Vaschetta', 'In_2025']].merge(
+        res26[['Articolo', 'Kg', 'N_Vaschette', 'Costo_per_Vaschetta']], on='Articolo', how='outer',
+        suffixes=('_2025', '_2026'))
     cmp = cmp.fillna(0)
     cmp['Var_Kg'] = cmp['Kg_2026'] - cmp['Kg_2025']
-    cmp['Var_%'] = cmp.apply(lambda r: (r['Var_Kg']/r['Kg_2025']*100) if r['Kg_2025']>0 else 100, axis=1)
+    cmp['Var_%'] = cmp.apply(lambda r: (r['Var_Kg'] / r['Kg_2025'] * 100) if r['Kg_2025'] > 0 else 100, axis=1)
     cmp['Delta_Costo'] = cmp['Costo_per_Vaschetta_2026'] - cmp['Costo_per_Vaschetta_2025']
     cmp = cmp.sort_values('Var_Kg', ascending=False)
 
     k1, k2, k3 = st.columns(3)
     k1.metric("Kg 2025", f"{cmp['Kg_2025'].sum():,.0f}")
-    k2.metric("Kg 2026 (gen-lug)", f"{cmp['Kg_2026'].sum():,.0f}")
+    k2.metric("Kg 2026", f"{cmp['Kg_2026'].sum():,.0f}")
     k3.metric("Variazione", f"{cmp['Var_Kg'].sum():+,.0f} kg")
 
-    cmp_show = cmp[['Descrizione','Luogo','Kg_2025','Kg_2026','Var_%','Costo_per_Vaschetta_2025','Costo_per_Vaschetta_2026','Delta_Costo']].copy()
+    cmp_show = cmp[['Descrizione', 'Luogo', 'Kg_2025', 'Kg_2026', 'Var_%', 'Costo_per_Vaschetta_2025', 'Costo_per_Vaschetta_2026', 'Delta_Costo']].copy()
     cmp_show['Var_%'] = cmp_show['Var_%'].map(lambda x: f"{x:+.1f}%")
     cmp_show['Costo 2025'] = cmp_show['Costo_per_Vaschetta_2025'].map(lambda x: f"€ {x:.4f}")
     cmp_show['Costo 2026'] = cmp_show['Costo_per_Vaschetta_2026'].map(lambda x: f"€ {x:.4f}")
     cmp_show['Delta'] = cmp_show['Delta_Costo'].map(lambda x: f"{x:+.4f}")
-    st.dataframe(cmp_show[['Descrizione','Luogo','Kg_2025','Kg_2026','Var_%','Costo 2025','Costo 2026','Delta']].rename(
-        columns={'Descrizione':'Prodotto','Luogo':'Sede','Kg_2025':'Kg 2025','Kg_2026':'Kg 2026'}),
+    st.dataframe(cmp_show[['Descrizione', 'Luogo', 'Kg_2025', 'Kg_2026', 'Var_%', 'Costo 2025', 'Costo 2026', 'Delta']].rename(
+        columns={'Descrizione': 'Prodotto', 'Luogo': 'Sede', 'Kg_2025': 'Kg 2025', 'Kg_2026': 'Kg 2026'}),
         use_container_width=True, hide_index=True)
 
 # ============================================================
-# 10. TABELLA DETTAGLIATA BASE ATTIVA
+# 11. TABELLA DETTAGLIATA BASE ATTIVA
 # ============================================================
 st.markdown("---")
 col_f1, col_f2 = st.columns(2)
@@ -415,30 +474,31 @@ df_vis = df_vis.sort_values('Quota_Costi', ascending=False)
 
 st.subheader(f"📋 Dettaglio Prodotti Base {label_base} ({len(df_vis)} prodotti)")
 
-def semaforo(row):
-    if row['Costo_per_Vaschetta'] == 0: return "⚪"
-    elif row['Costo_per_Vaschetta'] < costo_medio * 0.7: return "🟢"
-    elif row['Costo_per_Vaschetta'] < costo_medio * 1.3: return "🟡"
-    else: return "🔴"
-
-df_vis = df_vis.copy()
-df_vis['Semaforo'] = df_vis.apply(semaforo, axis=1)
 df_table = df_vis.copy()
 df_table['Peso_kg'] = df_table['Peso'].map(lambda x: f"{x} kg")
 df_table['Produzione'] = df_table['Kg'].map(lambda x: f"{x:,.2f} kg")
-df_table['Vaschette'] = df_table['Vaschette_Proiettate'].map(lambda x: f"{x:,.0f}")
-df_table['% Sede'] = df_table.apply(lambda r: (r['Produzione_Ponderata']/df_attivo[df_attivo['Luogo']==r['Luogo']]['Produzione_Ponderata'].sum()*100) if df_attivo[df_attivo['Luogo']==r['Luogo']]['Produzione_Ponderata'].sum()>0 else 0, axis=1).map(lambda x: f"{x:.3f}%")
+df_table['Vaschette'] = df_table['N_Vaschette'].map(lambda x: f"{x:,.0f}")
+df_table['% Sede'] = df_table.apply(
+    lambda r: (r['Produzione_Ponderata'] / df_attivo[df_attivo['Luogo'] == r['Luogo']]['Produzione_Ponderata'].sum() * 100)
+    if df_attivo[df_attivo['Luogo'] == r['Luogo']]['Produzione_Ponderata'].sum() > 0 else 0, axis=1
+).map(lambda x: f"{x:.3f}%")
 df_table['Quota'] = df_table['Quota_Costi'].map(lambda x: f"€ {x:,.2f}")
 df_table['Costo/Vasch'] = df_table['Costo_per_Vaschetta'].map(lambda x: f"€ {x:.4f}")
 
-st.dataframe(df_table[['Semaforo','Luogo','Articolo','Descrizione','Peso_kg','Produzione','Vaschette','Coefficiente','% Sede','Quota','Costo/Vasch']].rename(
-    columns={'Semaforo':'Livello','Luogo':'Sede','Articolo':'Cod.','Descrizione':'Prodotto','Peso_kg':'Peso',
-             'Produzione':f'Produz. {label_base}','Vaschette':'N. Vaschette','Coefficiente':'Coeff.',
-             '% Sede':'% Ripart. Sede','Quota':'Quota Costi','Costo/Vasch':'Costo Gen./Vaschetta'}),
+st.dataframe(df_table[['Stato', 'Luogo', 'Articolo', 'Descrizione', 'Peso_kg', 'Produzione', 'Vaschette', 'Coefficiente', '% Sede', 'Quota', 'Costo/Vasch']].rename(
+    columns={'Stato': 'St.', 'Luogo': 'Sede', 'Articolo': 'Cod.', 'Descrizione': 'Prodotto', 'Peso_kg': 'Peso',
+             'Produzione': f'Produz. {label_base}', 'Vaschette': 'N. Vaschette', 'Coefficiente': 'Coeff.',
+             '% Sede': '% Ripart. Sede', 'Quota': 'Quota Costi', 'Costo/Vasch': 'Costo Gen./Vaschetta'}),
     use_container_width=True, hide_index=True)
 
+st.markdown("""
+<div style="background-color: #f0f2f6; padding: 10px; border-radius: 5px; margin-top: 10px;">
+    <b>Legenda:</b> ✅ Prodotto nel periodo | 🆕 Nuovo (non presente nell'altra base) | 💤 Dormiente (nessuna produzione nel periodo, costo/vaschetta standard)
+</div>
+""", unsafe_allow_html=True)
+
 # ============================================================
-# 11. EXPORT
+# 12. EXPORT
 # ============================================================
 st.markdown("---")
 st.subheader("💾 Esporta Dati")
@@ -447,4 +507,4 @@ st.download_button(label="📥 Scarica analisi completa in CSV", data=csv,
     file_name=f'pastai_costi_base{label_base}_{datetime.now().strftime("%Y%m%d")}.csv', mime='text/csv')
 
 st.markdown("---")
-st.caption("Dati produzione 2025 e 2026 | Inserimento costi manuale | Doppia base di ripartizione")
+st.caption("Anagrafica unica 2025+2026 | Inserimento costi manuale | Ripartizione ponderata per sede e complessità")
